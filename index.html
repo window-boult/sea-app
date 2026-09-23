@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency SOS & Hospital Dispatch</title>
+  
+  <!-- Leaflet Maps CSS & JS (100% Free OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- PeerJS SDK for Instant Device-to-Device WebRTC Connection -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <style>
+    :root {
+      --purple: #1a002c;
+      --light-purple: #3a005f;
+      --green: #00e676;
+      --red: #ff1744;
+      --yellow: #ffea00;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 15px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--purple);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mode Selection Header */
+    .mode-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+      background: #0d0017;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--light-purple);
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      background: var(--light-purple);
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    .mode-btn.active {
+      background: var(--green);
+      color: #000;
+    }
+
+    /* Room Key Setup Box */
+    .room-box {
+      background: #0d0017;
+      border: 1px solid var(--light-purple);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .room-box input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--light-purple);
+      background: #1a002c;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      width: 160px;
+    }
+
+    /* Views */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Client View Styles */
+    .client-card {
+      background: #0d0017;
+      padding: 20px;
+      border-radius: 16px;
+      border: 2px solid var(--light-purple);
+      text-align: center;
+      max-width: 450px;
+      margin: 0 auto;
+    }
+    .sos-btn {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 4px solid #fff;
+      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
+      color: white;
+      font-weight: 900;
+      font-size: 2.2rem;
+      cursor: pointer;
+      box-shadow: 0 0 25px var(--red);
+      margin: 20px auto;
+      transition: transform 0.1s;
+    }
+    .sos-btn:active { transform: scale(0.92); }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 1px solid var(--light-purple);
+      background: #1a002c;
+      color: white;
+    }
+
+    /* Hospital View Styles */
+    .hospital-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    @media (min-width: 768px) {
+      .hospital-layout { grid-template-columns: 320px 1fr; }
+    }
+    
+    .hospital-header {
+      background: var(--light-purple);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid var(--green);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .siren-active {
+      animation: flashSiren 0.5s infinite alternate;
+    }
+    @keyframes flashSiren {
+      0% { background-color: var(--light-purple); box-shadow: 0 0 10px var(--green); }
+      100% { background-color: #990000; box-shadow: 0 0 35px var(--red); }
+    }
+
+    .btn-stop {
+      background: var(--green);
+      color: #000;
+      font-weight: bold;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .details-panel {
+      background: #0d0017;
+      border: 1px solid var(--light-purple);
+      border-radius: 12px;
+      padding: 15px;
+    }
+    #map {
+      height: 400px;
+      border-radius: 12px;
+      border: 2px solid var(--green);
+    }
+    .status-text { font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Mode Selector Bar -->
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btnClientMode" onclick="setMode('client')">📱 Client (SOS Caller)</button>
+    <button class="mode-btn" id="btnHospitalMode" onclick="setMode('hospital')">🏥 Hospital (Host Unit)</button>
+  </div>
+
+  <!-- Shared Secret Channel Key -->
+  <div class="room-box">
+    <label>Shared Channel ID: </label>
+    <input type="text" id="roomId" value="hospital-sos-99" onchange="initPeer()">
+    <small style="display:block; color:#aaa; margin-top:4px;">Must be identical on both devices!</small>
+  </div>
+
+  <!-- CLIENT VIEW -->
+  <div id="clientView" class="view active">
+    <div class="client-card">
+      <h1 style="color: var(--green); margin:0;">EMERGENCY SOS</h1>
+      <p>Tap button to transmit GPS location instantly.</p>
+      
+      <button class="sos-btn" onclick="sendSOS()">SOS</button>
+
+      <input type="text" id="clientName" placeholder="Full Name">
+      <input type="tel" id="clientPhone" placeholder="Phone Number">
+      <textarea id="clientNotes" placeholder="Medical details / Emergency description"></textarea>
+
+      <div id="clientStatus" class="status-text" style="color: var(--yellow);">System Ready</div>
+    </div>
+  </div>
+
+  <!-- HOSPITAL HOST VIEW -->
+  <div id="hospitalView" class="view">
+    <div class="hospital-header" id="sirenHeader">
+      <div>
+        <h2 style="margin:0;">🏥 Hospital Dispatch Dashboard</h2>
+        <span id="hospitalStatusLabel">Status: Monitoring incoming alerts...</span>
+      </div>
+      <button class="btn-stop" onclick="stopSiren()">STOP SIREN</button>
+    </div>
+
+    <div class="hospital-layout">
+      <div class="details-panel">
+        <h3 style="color: var(--green); margin-top:0;">Alert Data</h3>
+        <div id="alertDetails">
+          <p style="color: #888;">No active emergency signal detected.</p>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'client';
+    let peer = null;
+    let conn = null;
+    let map = null;
+    let mapMarker = null;
+    let sirenInterval = null;
+    let audioCtx = null;
+    let oscillator = null;
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnClientMode').classList.toggle('active', mode === 'client');
+      document.getElementById('btnHospitalMode').classList.toggle('active', mode === 'hospital');
+      document.getElementById('clientView').classList.toggle('active', mode === 'client');
+      document.getElementById('hospitalView').classList.toggle('active', mode === 'hospital');
+
+      if (mode === 'hospital' && !map) {
+        setTimeout(initMap, 200); // Initialize map on display
+      }
+      initPeer();
+    }
+
+    function initMap() {
+      map = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+    }
+
+    function initPeer() {
+      if (peer) peer.destroy();
+      const channelId = document.getElementById('roomId').value.trim();
+
+      if (currentMode === 'hospital') {
+        // Hospital sits as the Host Listener using the Channel ID
+        peer = new Peer(channelId);
+        
+        peer.on('open', (id) => {
+          document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Waiting for distress calls...";
+        });
+
+        peer.on('connection', (connection) => {
+          conn = connection;
+          conn.on('data', (data) => {
+            if (data.type === 'SOS_ALERT') {
+              receiveSOS(data);
+            }
+          });
+        });
+
+        peer.on('error', (err) => {
+          if (err.type === 'unavailable-id') {
+            document.getElementById('hospitalStatusLabel').innerText = "Channel ID already taken! Use a unique ID.";
+          }
+        });
+
+      } else {
+        // Client connects as caller
+        peer = new Peer();
+        peer.on('open', () => {
+          document.getElementById('clientStatus').innerText = "Connected & Ready to Send";
+          document.getElementById('clientStatus').style.color = "var(--green)";
+        });
+      }
+    }
+
+    // Client Function: Trigger SOS
+    function sendSOS() {
+      const status = document.getElementById('clientStatus');
+      status.style.color = "var(--yellow)";
+      status.innerText = "Retrieving GPS Location...";
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const channelId = document.getElementById('roomId').value.trim();
+            status.innerText = "Connecting to Hospital...";
+            
+            conn = peer.connect(channelId);
+            conn.on('open', () => {
+              const payload = {
+                type: 'SOS_ALERT',
+                name: document.getElementById('clientName').value || 'Anonymous',
+                phone: document.getElementById('clientPhone').value || 'Not provided',
+                notes: document.getElementById('clientNotes').value || 'Emergency SOS',
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                time: new Date().toLocaleTimeString()
+              };
+              conn.send(payload);
+              status.innerText = "🚨 SOS DISPATCHED TO HOSPITAL!";
+              status.style.color = "var(--green)";
+            });
+
+            conn.on('data', (data) => {
+              if (data.type === 'ACKNOWLEDGED') {
+                status.innerText = "✅ Hospital Acknowledged Emergency!";
+              }
+            });
+
+            setTimeout(() => {
+              if (!conn || !conn.open) {
+                status.innerText = "Error: Hospital device not online or wrong Channel ID!";
+                status.style.color = "var(--red)";
+              }
+            }, 5000);
+          },
+          (err) => {
+            alert("Please allow GPS location access to send SOS!");
+            status.innerText = "GPS Access Denied";
+            status.style.color = "var(--red)";
+          },
+          { enableHighAccuracy: true }
+        );
+      }
+    }
+
+    // Hospital Function: Handle SOS Signal
+    function receiveSOS(data) {
+      startSiren();
+
+      document.getElementById('sirenHeader').classList.add('siren-active');
+      document.getElementById('hospitalStatusLabel').innerText = "🚨 EMERGENCY DISTRESS SIGNAL RECEIVED!";
+
+      document.getElementById('alertDetails').innerHTML = `
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Phone:</strong> ${data.phone}</p>
+        <p><strong>Notes:</strong> ${data.notes}</p>
+        <p><strong>Time:</strong> ${data.time}</p>
+        <p><strong>Coordinates:</strong> ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</p>
+        <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green);">Open in Google Maps ↗</a></p>
+      `;
+
+      const coords = [data.lat, data.lng];
+      map.setView(coords, 16);
+
+      if (mapMarker) map.removeLayer(mapMarker);
+      mapMarker = L.marker(coords).addTo(map)
+        .bindPopup(`<b>${data.name}</b><br>${data.phone}`)
+        .openPopup();
+    }
+
+    function stopSiren() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator = null;
+      }
+      document.getElementById('sirenHeader').classList.remove('siren-active');
+      document.getElementById('hospitalStatusLabel').innerText = "Status: Alert Resolved / Siren Stopped";
+
+      if (conn && conn.open) {
+        conn.send({ type: 'ACKNOWLEDGED' });
+      }
+    }
+
+    function startSiren() {
+      if (oscillator) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+
+      let pitchToggle = false;
+      sirenInterval = setInterval(() => {
+        if (!oscillator) { clearInterval(sirenInterval); return; }
+        oscillator.frequency.setValueAtTime(pitchToggle ? 600 : 900, audioCtx.currentTime);
+        pitchToggle = !pitchToggle;
+      }, 400);
+
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.start();
+    }
+
+    // Auto-init on load
+    window.onload = () => initPeer();
+  </script>
+</body>
+</html>
