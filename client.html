@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emergency SOS Caller</title>
   
-  <!-- PeerJS for Instant Device-to-Device WebRTC Connection -->
+  <!-- PeerJS for WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -20,7 +20,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 20px;
+      padding: 15px;
       font-family: system-ui, -apple-system, sans-serif;
       background: var(--purple);
       color: #fff;
@@ -35,9 +35,8 @@
       padding: 24px;
       border-radius: 20px;
       border: 2px solid var(--light-purple);
-      text-align: center;
       width: 100%;
-      max-width: 420px;
+      max-width: 450px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
 
@@ -52,36 +51,76 @@
       font-size: 2.5rem;
       cursor: pointer;
       box-shadow: 0 0 30px var(--red);
-      margin: 25px auto;
-      transition: transform 0.1s, box-shadow 0.2s;
+      margin: 15px auto;
+      display: block;
+      transition: transform 0.1s;
     }
-    .sos-btn:active { 
-      transform: scale(0.93);
-      box-shadow: 0 0 10px var(--red);
+    .sos-btn:active { transform: scale(0.93); }
+
+    .call-112-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--red);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 2px solid #fff;
     }
 
     .channel-box {
-      margin-bottom: 15px;
       background: #1a002c;
       padding: 8px;
       border-radius: 8px;
       border: 1px solid var(--light-purple);
+      text-align: center;
+      margin-bottom: 15px;
     }
 
-    input, textarea {
+    .section-title {
+      color: var(--green);
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      border-bottom: 1px solid var(--light-purple);
+      padding-bottom: 3px;
+    }
+
+    input, textarea, select {
       width: 100%;
-      padding: 12px;
-      margin: 6px 0;
+      padding: 10px;
+      margin: 5px 0;
       border-radius: 8px;
       border: 1px solid var(--light-purple);
       background: #1a002c;
       color: white;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #ccc;
+      margin: 10px 0;
     }
 
     .status-text {
       font-weight: bold;
       margin-top: 15px;
+      text-align: center;
       font-size: 1rem;
     }
   </style>
@@ -89,19 +128,53 @@
 <body>
 
   <div class="client-card">
-    <h1 style="color: var(--green); margin: 0 0 5px 0;">EMERGENCY SOS</h1>
-    <p style="color: #ccc; margin-top: 0;">Tap button to transmit live GPS coordinates</p>
-    
+    <h1 style="color: var(--green); margin: 0 0 5px 0; text-align: center;">EMERGENCY SOS</h1>
+
+    <!-- Direct 112 Call Button -->
+    <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
+
     <div class="channel-box">
       <small style="color:#aaa;">Hospital Code: </small>
       <input type="text" id="roomId" value="hospital-sos-99" style="width: auto; padding: 4px; text-align: center; font-weight: bold;" onchange="initPeer()">
     </div>
 
+    <!-- SOS Trigger Button -->
     <button class="sos-btn" onclick="sendSOS()">SOS</button>
 
-    <input type="text" id="clientName" placeholder="Full Name">
-    <input type="tel" id="clientPhone" placeholder="Phone Number">
-    <textarea id="clientNotes" rows="3" placeholder="Medical details / Emergency description"></textarea>
+    <div class="checkbox-container">
+      <input type="checkbox" id="autoCall112" style="width:auto; margin:0;">
+      <label for="autoCall112">Automatically open 112 dialer when SOS is pressed</label>
+    </div>
+
+    <!-- Patient Basic Info -->
+    <div class="section-title">Personal Info</div>
+    <div class="grid-2">
+      <input type="text" id="clientName" placeholder="Full Name" onchange="saveProfile()">
+      <input type="tel" id="clientPhone" placeholder="Phone Number" onchange="saveProfile()">
+    </div>
+
+    <!-- Location & Address Details -->
+    <div class="section-title">Manual Address / Landmark (Optional)</div>
+    <textarea id="manualAddress" rows="2" placeholder="House/Apt No, Street Name, Floor, Landmark (helps if GPS is inaccurate)"></textarea>
+
+    <!-- Detailed Medical Profile -->
+    <div class="section-title">Medical Profile (Saved locally)</div>
+    <div class="grid-2">
+      <select id="bloodGroup" onchange="saveProfile()">
+        <option value="Not Specified">Select Blood Group</option>
+        <option value="A+">A+</option>
+        <option value="A-">A-</option>
+        <option value="B+">B+</option>
+        <option value="B-">B-</option>
+        <option value="O+">O+</option>
+        <option value="O-">O-</option>
+        <option value="AB+">AB+</option>
+        <option value="AB-">AB-</option>
+      </select>
+      <input type="text" id="emergencyContact" placeholder="Ice Contact / Relative Phone" onchange="saveProfile()">
+    </div>
+    <input type="text" id="allergies" placeholder="Known Allergies (e.g., Penicillin, Peanuts)" onchange="saveProfile()">
+    <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions (e.g., Asthma, Diabetes, Heart Disease)" onchange="saveProfile()"></textarea>
 
     <div id="clientStatus" class="status-text" style="color: var(--yellow);">Connecting...</div>
   </div>
@@ -127,60 +200,101 @@
       });
     }
 
+    // Save Medical Profile Locally
+    function saveProfile() {
+      const profile = {
+        name: document.getElementById('clientName').value,
+        phone: document.getElementById('clientPhone').value,
+        bloodGroup: document.getElementById('bloodGroup').value,
+        emergencyContact: document.getElementById('emergencyContact').value,
+        allergies: document.getElementById('allergies').value,
+        medicalConditions: document.getElementById('medicalConditions').value
+      };
+      localStorage.setItem('sos_patient_profile', JSON.stringify(profile));
+    }
+
+    // Load Medical Profile Locally
+    function loadProfile() {
+      const saved = localStorage.getItem('sos_patient_profile');
+      if (saved) {
+        const profile = JSON.parse(saved);
+        document.getElementById('clientName').value = profile.name || '';
+        document.getElementById('clientPhone').value = profile.phone || '';
+        document.getElementById('bloodGroup').value = profile.bloodGroup || 'Not Specified';
+        document.getElementById('emergencyContact').value = profile.emergencyContact || '';
+        document.getElementById('allergies').value = profile.allergies || '';
+        document.getElementById('medicalConditions').value = profile.medicalConditions || '';
+      }
+    }
+
     function sendSOS() {
       const status = document.getElementById('clientStatus');
       status.style.color = "var(--yellow)";
       status.innerText = "Retrieving GPS Location...";
 
+      // Check auto 112 dialer option
+      if (document.getElementById('autoCall112').checked) {
+        window.location.href = "tel:112";
+      }
+
+      const transmitData = (lat = null, lng = null) => {
+        const channelId = document.getElementById('roomId').value.trim();
+        status.innerText = "Transmitting to Hospital...";
+        
+        conn = peer.connect(channelId);
+
+        conn.on('open', () => {
+          const payload = {
+            type: 'SOS_ALERT',
+            name: document.getElementById('clientName').value || 'Anonymous',
+            phone: document.getElementById('clientPhone').value || 'Not provided',
+            manualAddress: document.getElementById('manualAddress').value || 'None specified',
+            bloodGroup: document.getElementById('bloodGroup').value,
+            allergies: document.getElementById('allergies').value || 'None',
+            conditions: document.getElementById('medicalConditions').value || 'None',
+            emergencyContact: document.getElementById('emergencyContact').value || 'N/A',
+            lat: lat,
+            lng: lng,
+            time: new Date().toLocaleTimeString()
+          };
+          conn.send(payload);
+          status.innerText = "🚨 SOS DISPATCHED TO HOSPITAL!";
+          status.style.color = "var(--green)";
+        });
+
+        conn.on('data', (data) => {
+          if (data.type === 'ACKNOWLEDGED') {
+            status.innerText = "✅ Hospital Acknowledged & Help Dispatched!";
+          }
+        });
+
+        setTimeout(() => {
+          if (!conn || !conn.open) {
+            status.innerText = "Error: Hospital device offline or incorrect code!";
+            status.style.color = "var(--red)";
+          }
+        }, 6000);
+      };
+
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const channelId = document.getElementById('roomId').value.trim();
-            status.innerText = "Connecting to Hospital Host...";
-            
-            conn = peer.connect(channelId);
-
-            conn.on('open', () => {
-              const payload = {
-                type: 'SOS_ALERT',
-                name: document.getElementById('clientName').value || 'Anonymous',
-                phone: document.getElementById('clientPhone').value || 'Not provided',
-                notes: document.getElementById('clientNotes').value || 'Emergency SOS signal',
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                time: new Date().toLocaleTimeString()
-              };
-              conn.send(payload);
-              status.innerText = "🚨 SOS DISPATCHED TO HOSPITAL!";
-              status.style.color = "var(--green)";
-            });
-
-            conn.on('data', (data) => {
-              if (data.type === 'ACKNOWLEDGED') {
-                status.innerText = "✅ Hospital Acknowledged & Help Dispatched!";
-              }
-            });
-
-            setTimeout(() => {
-              if (!conn || !conn.open) {
-                status.innerText = "Error: Hospital device offline or incorrect code!";
-                status.style.color = "var(--red)";
-              }
-            }, 6000);
-          },
+          (pos) => transmitData(pos.coords.latitude, pos.coords.longitude),
           (err) => {
-            alert("Please allow GPS location permission to send emergency alerts!");
-            status.innerText = "GPS Access Denied";
-            status.style.color = "var(--red)";
+            // If GPS fails, still send manual address and medical details
+            status.innerText = "GPS unavailable. Transmitting manual data...";
+            transmitData(null, null);
           },
-          { enableHighAccuracy: true }
+          { enableHighAccuracy: true, timeout: 5000 }
         );
       } else {
-        alert("Geolocation is not supported by your browser.");
+        transmitData(null, null);
       }
     }
 
-    window.onload = () => initPeer();
+    window.onload = () => {
+      loadProfile();
+      initPeer();
+    };
   </script>
 </body>
 </html>
