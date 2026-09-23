@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hospital Emergency Dispatch Host</title>
   
-  <!-- Leaflet Maps CSS & JS (Free OpenStreetMap) -->
+  <!-- Leaflet Maps CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
-  <!-- PeerJS for Instant Device-to-Device WebRTC Connection -->
+  <!-- PeerJS for WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -18,6 +18,7 @@
       --light-purple: #3a005f;
       --green: #00e676;
       --red: #ff1744;
+      --yellow: #ffea00;
     }
 
     * { box-sizing: border-box; }
@@ -80,7 +81,7 @@
       flex: 1;
     }
     @media (min-width: 768px) {
-      .hospital-layout { grid-template-columns: 320px 1fr; }
+      .hospital-layout { grid-template-columns: 360px 1fr; }
     }
 
     .details-panel {
@@ -88,6 +89,18 @@
       border: 1px solid var(--light-purple);
       border-radius: 12px;
       padding: 20px;
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--red);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.9rem;
     }
 
     #map {
@@ -100,7 +113,7 @@
 </head>
 <body>
 
-  <!-- Channel ID Setting Bar -->
+  <!-- Connection ID Setting -->
   <div>
     <div class="channel-id-box">
       <label>Hospital Connection ID: </label>
@@ -108,7 +121,7 @@
     </div>
   </div>
 
-  <!-- Main Hospital Header Bar -->
+  <!-- Header Bar -->
   <div class="hospital-header" id="sirenHeader">
     <div>
       <h2 style="margin:0;">🏥 Hospital Dispatch Dashboard</h2>
@@ -117,10 +130,10 @@
     <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
   </div>
 
-  <!-- Dashboard Layout -->
+  <!-- Main Layout -->
   <div class="hospital-layout">
     <div class="details-panel">
-      <h3 style="color: var(--green); margin-top:0;">Emergency Details</h3>
+      <h3 style="color: var(--green); margin-top:0;">Emergency & Triage Info</h3>
       <div id="alertDetails">
         <p style="color: #888;">Monitoring live incoming distress calls...</p>
       </div>
@@ -176,22 +189,37 @@
       document.getElementById('sirenHeader').classList.add('siren-active');
       document.getElementById('hospitalStatusLabel').innerText = "🚨 EMERGENCY DISTRESS SIGNAL RECEIVED!";
 
+      let locationHTML = "";
+      if (data.lat && data.lng) {
+        locationHTML = `
+          <p><strong>GPS:</strong> ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</p>
+          <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green); font-weight:bold;">Open in Google Maps ↗</a></p>
+        `;
+        const coords = [data.lat, data.lng];
+        map.setView(coords, 16);
+
+        if (mapMarker) map.removeLayer(mapMarker);
+        mapMarker = L.marker(coords).addTo(map)
+          .bindPopup(`<b>${data.name}</b><br>Blood Group: ${data.bloodGroup}<br>Phone: ${data.phone}`)
+          .openPopup();
+      } else {
+        locationHTML = `<p style="color:var(--yellow);">⚠️ GPS Signal Unavailable (Relying on manual address)</p>`;
+      }
+
       document.getElementById('alertDetails').innerHTML = `
+        <p><strong>Time:</strong> ${data.time}</p>
         <p><strong>Name:</strong> ${data.name}</p>
         <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Notes:</strong> ${data.notes}</p>
-        <p><strong>Time:</strong> ${data.time}</p>
-        <p><strong>GPS:</strong> ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</p>
-        <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green); font-weight:bold;">Open in Google Maps ↗</a></p>
+        <p><strong>Blood Group:</strong> <span class="badge">${data.bloodGroup}</span></p>
+        <hr style="border-color: var(--light-purple);">
+        <p><strong>Manual Address:</strong><br><span style="color:#ffea00;">${data.manualAddress}</span></p>
+        <hr style="border-color: var(--light-purple);">
+        <p><strong>Known Allergies:</strong> ${data.allergies}</p>
+        <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
+        <p><strong>Emergency Contact:</strong> ${data.emergencyContact}</p>
+        <hr style="border-color: var(--light-purple);">
+        ${locationHTML}
       `;
-
-      const coords = [data.lat, data.lng];
-      map.setView(coords, 16);
-
-      if (mapMarker) map.removeLayer(mapMarker);
-      mapMarker = L.marker(coords).addTo(map)
-        .bindPopup(`<b>${data.name}</b><br>${data.phone}`)
-        .openPopup();
     }
 
     function stopSiren() {
