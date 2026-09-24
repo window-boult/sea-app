@@ -1,0 +1,28 @@
+{
+  "packageId": "com.sea.emergencyapp",
+  "host": "window-boult.github.io",
+  "name": "SEA Emergency Response",
+  "launcherName": "SEA",
+  "display": "standalone",
+  "themeColor": "#1a002c",
+  "navigationColor": "#1a002c",
+  "backgroundColor": "#1a002c",
+  "enableNotifications": true,
+  "startUrl": "/sea-app/",
+  "iconUrl": "https://raw.githubusercontent.com/window-boult/sea-app/main/icon-512.png",
+  "maskableIconUrl": "https://raw.githubusercontent.com/window-boult/sea-app/main/icon-512.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://raw.githubusercontent.com/window-boult/sea-app/main/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  }
+}
