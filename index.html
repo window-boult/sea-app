@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SEA Dashboard - SOS Emergency Attendance</title>
   
-  <!-- Leaflet Maps CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  <!-- PeerJS for WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -46,35 +43,12 @@
       gap: 10px;
     }
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .header-logo { width: 50px; height: 50px; }
+    .header-title-box h2 { margin: 0; color: var(--green); font-size: 1.6rem; }
+    .header-title-box small { color: #ccc; font-size: 0.8rem; letter-spacing: 1px; }
 
-    .header-logo {
-      width: 50px;
-      height: 50px;
-    }
-
-    .header-title-box {
-      display: flex;
-      flex-direction: column;
-    }
-    .header-title-box h2 {
-      margin: 0;
-      color: var(--green);
-      font-size: 1.6rem;
-    }
-    .header-title-box small {
-      color: #ccc;
-      font-size: 0.8rem;
-      letter-spacing: 1px;
-    }
-
-    .siren-active {
-      animation: flashSiren 0.5s infinite alternate;
-    }
+    .siren-active { animation: flashSiren 0.5s infinite alternate; }
     @keyframes flashSiren {
       0% { background-color: var(--light-purple); box-shadow: 0 0 10px var(--green); }
       100% { background-color: #990000; box-shadow: 0 0 40px var(--red); }
@@ -139,15 +113,11 @@
 </head>
 <body>
 
-  <!-- Connection ID Setting -->
-  <div>
-    <div class="channel-id-box">
-      <label>SEA Hospital Connection ID: </label>
-      <input type="text" id="roomId" value="sea-hospital-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
-    </div>
+  <div class="channel-id-box">
+    <label>SEA Hospital Connection ID: </label>
+    <input type="text" id="roomId" value="sea-hospital-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
   </div>
 
-  <!-- Header Bar -->
   <div class="hospital-header" id="sirenHeader">
     <div class="header-left">
       <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
@@ -156,10 +126,6 @@
             <stop offset="0%" stop-color="#3a005f"/>
             <stop offset="100%" stop-color="#0d0017"/>
           </radialGradient>
-          <filter id="glow2" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
           <linearGradient id="shieldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#ff1744"/>
             <stop offset="100%" stop-color="#b20000"/>
@@ -170,9 +136,8 @@
           </linearGradient>
         </defs>
         <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad2)" stroke="#3a005f" stroke-width="4"/>
-        <path d="M250,90 L360,130 C360,260 250,350 250,370 C250,350 140,260 140,130 Z" fill="url(#shieldGrad2)" stroke="#ffffff" stroke-width="6" opacity="0.95" filter="url(#glow2)"/>
-        <path d="M230,170 H270 V210 H310 V250 H270 V290 H230 V250 H190 V210 H230 Z" fill="#ffffff" opacity="0.25"/>
-        <path d="M120,240 H190 L210,190 L235,280 L265,160 L290,260 L310,240 H380" fill="none" stroke="url(#pulseGrad2)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow2)"/>
+        <path d="M250,90 L360,130 C360,260 250,350 250,370 C250,350 140,260 140,130 Z" fill="url(#shieldGrad2)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
+        <path d="M120,240 H190 L210,190 L235,280 L265,160 L290,260 L310,240 H380" fill="none" stroke="url(#pulseGrad2)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <div class="header-title-box">
         <h2>SEA Dashboard</h2>
@@ -183,7 +148,6 @@
     <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
   </div>
 
-  <!-- Main Layout -->
   <div class="hospital-layout">
     <div class="details-panel">
       <h3 style="color: var(--green); margin-top:0;">Emergency & Triage Info</h3>
@@ -199,6 +163,7 @@
     let conn = null;
     let map = null;
     let mapMarker = null;
+    let accuracyCircle = null;
     let sirenInterval = null;
     let audioCtx = null;
     let oscillator = null;
@@ -214,10 +179,21 @@
       if (peer) peer.destroy();
       const channelId = document.getElementById('roomId').value.trim();
 
-      peer = new Peer(channelId);
+      peer = new Peer(channelId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        },
+        debug: 1
+      });
       
       peer.on('open', (id) => {
-        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening for incoming SEA calls";
+        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening (ID: " + id + ")";
       });
 
       peer.on('connection', (connection) => {
@@ -231,7 +207,9 @@
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change SEA Connection ID.";
+          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change Hospital Code.";
+        } else {
+          document.getElementById('hospitalStatusLabel').innerText = "Error: " + err.type;
         }
       });
     }
@@ -244,19 +222,34 @@
 
       let locationHTML = "";
       if (data.lat && data.lng) {
+        const accuracyText = data.accuracy ? `±${Math.round(data.accuracy)} meters` : 'Standard';
         locationHTML = `
-          <p><strong>GPS:</strong> ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</p>
+          <p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
+          <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">${accuracyText}</span></p>
           <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green); font-weight:bold;">Open in Google Maps ↗</a></p>
         `;
+        
         const coords = [data.lat, data.lng];
-        map.setView(coords, 16);
+        map.setView(coords, 17);
 
+        // Update Pin
         if (mapMarker) map.removeLayer(mapMarker);
         mapMarker = L.marker(coords).addTo(map)
           .bindPopup(`<b>${data.name}</b><br>Blood Group: ${data.bloodGroup}<br>Phone: ${data.phone}`)
           .openPopup();
+
+        // Update Accuracy Circle
+        if (accuracyCircle) map.removeLayer(accuracyCircle);
+        if (data.accuracy) {
+          accuracyCircle = L.circle(coords, {
+            radius: data.accuracy,
+            color: '#00e676',
+            fillColor: '#00e676',
+            fillOpacity: 0.15
+          }).addTo(map);
+        }
       } else {
-        locationHTML = `<p style="color:var(--yellow);">⚠️ GPS Signal Unavailable (Relying on manual address)</p>`;
+        locationHTML = `<p style="color:var(--yellow);">⚠️ Acquiring live GPS satellite fix... (Relying on manual address)</p>`;
       }
 
       document.getElementById('alertDetails').innerHTML = `
