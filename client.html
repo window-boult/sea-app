@@ -3,180 +3,296 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEA Patient App</title>
+  <title>Emergency SOS Caller</title>
+  
+  <!-- PeerJS for WebRTC Connection -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #1a002c;
+      --light-purple: #3a005f;
+      --green: #00e676;
+      --red: #ff1744;
+      --yellow: #ffea00;
+    }
+
+    * { box-sizing: border-box; }
     body {
-      background-color: #121212;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    /* Mobile Frame */
-    .phone-wrapper {
-      width: 100%;
-      max-width: 412px;
-      height: 100vh;
-      max-height: 869px;
-      background-color: #000000;
-      border-radius: 36px;
-      border: 8px solid #2d2d2d;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .status-bar {
-      height: 30px;
-      background: #000;
+      margin: 0;
+      padding: 15px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--purple);
       color: #fff;
+      min-height: 100vh;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 16px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .app-header {
-      height: 56px;
-      background-color: #1f1f1f;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      border-bottom: 1px solid #333;
-    }
-
-    .app-header img {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      margin-right: 12px;
-      object-fit: cover;
-    }
-
-    .app-header h1 {
-      color: #ffffff;
-      font-size: 18px;
-      font-weight: 500;
-    }
-
-    .app-body {
-      flex: 1;
-      padding: 20px;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      text-align: center;
     }
 
-    .sos-button {
+    .client-card {
+      background: #0d0017;
+      padding: 24px;
+      border-radius: 20px;
+      border: 2px solid var(--light-purple);
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .sos-btn {
       width: 160px;
       height: 160px;
       border-radius: 50%;
-      background: radial-gradient(circle, #ff1744 0%, #b71c1c 100%);
-      border: 4px solid #ff5252;
+      border: 5px solid #fff;
+      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
       color: white;
-      font-size: 20px;
-      font-weight: bold;
+      font-weight: 900;
+      font-size: 2.5rem;
       cursor: pointer;
-      box-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 30px var(--red);
+      margin: 15px auto;
+      display: block;
+      transition: transform 0.1s;
+    }
+    .sos-btn:active { transform: scale(0.93); }
+
+    .call-112-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--red);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 2px solid #fff;
     }
 
-    .sos-button:active {
-      transform: scale(0.95);
-      box-shadow: 0 0 10px rgba(255, 23, 68, 0.4);
+    .channel-box {
+      background: #1a002c;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--light-purple);
+      text-align: center;
+      margin-bottom: 15px;
     }
 
-    #status-text {
-      margin-top: 24px;
-      font-size: 14px;
-      color: #b0bec5;
-      line-height: 1.5;
+    .section-title {
+      color: var(--green);
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      border-bottom: 1px solid var(--light-purple);
+      padding-bottom: 3px;
     }
 
-    .nav-bar {
-      height: 30px;
-      background-color: #000000;
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      border: 1px solid var(--light-purple);
+      background: #1a002c;
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .checkbox-container {
       display: flex;
-      justify-content: center;
       align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #ccc;
+      margin: 10px 0;
     }
 
-    .home-indicator {
-      width: 120px;
-      height: 4px;
-      background-color: #ffffff;
-      border-radius: 2px;
-      opacity: 0.6;
+    .status-text {
+      font-weight: bold;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <div class="phone-wrapper">
-    <div class="status-bar">
-      <span>9:41</span>
-      <span>5G 🔋</span>
+  <div class="client-card">
+    <h1 style="color: var(--green); margin: 0 0 5px 0; text-align: center;">EMERGENCY SOS</h1>
+
+    <!-- Direct 112 Call Button -->
+    <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
+
+    <div class="channel-box">
+      <small style="color:#aaa;">Hospital Code: </small>
+      <input type="text" id="roomId" value="hospital-sos-99" style="width: auto; padding: 4px; text-align: center; font-weight: bold;" onchange="initPeer()">
     </div>
 
-    <div class="app-header">
-      <img src="logo.png" alt="SEA Logo" onerror="this.style.display='none'">
-      <h1>SEA Patient App</h1>
+    <!-- SOS Trigger Button -->
+    <button class="sos-btn" onclick="sendSOS()">SOS</button>
+
+    <div class="checkbox-container">
+      <input type="checkbox" id="autoCall112" style="width:auto; margin:0;">
+      <label for="autoCall112">Automatically open 112 dialer when SOS is pressed</label>
     </div>
 
-    <div class="app-body">
-      <button class="sos-button" onclick="sendEmergencyAlert()">EMERGENCY<br>SOS</button>
-      <div id="status-text">Tap the button to transmit live GPS coordinates to the hospital dashboard.</div>
+    <!-- Patient Basic Info -->
+    <div class="section-title">Personal Info</div>
+    <div class="grid-2">
+      <input type="text" id="clientName" placeholder="Full Name" onchange="saveProfile()">
+      <input type="tel" id="clientPhone" placeholder="Phone Number" onchange="saveProfile()">
     </div>
 
-    <div class="nav-bar">
-      <div class="home-indicator"></div>
+    <!-- Location & Address Details -->
+    <div class="section-title">Manual Address / Landmark (Optional)</div>
+    <textarea id="manualAddress" rows="2" placeholder="House/Apt No, Street Name, Floor, Landmark (helps if GPS is inaccurate)"></textarea>
+
+    <!-- Detailed Medical Profile -->
+    <div class="section-title">Medical Profile (Saved locally)</div>
+    <div class="grid-2">
+      <select id="bloodGroup" onchange="saveProfile()">
+        <option value="Not Specified">Select Blood Group</option>
+        <option value="A+">A+</option>
+        <option value="A-">A-</option>
+        <option value="B+">B+</option>
+        <option value="B-">B-</option>
+        <option value="O+">O+</option>
+        <option value="O-">O-</option>
+        <option value="AB+">AB+</option>
+        <option value="AB-">AB-</option>
+      </select>
+      <input type="text" id="emergencyContact" placeholder="Ice Contact / Relative Phone" onchange="saveProfile()">
     </div>
+    <input type="text" id="allergies" placeholder="Known Allergies (e.g., Penicillin, Peanuts)" onchange="saveProfile()">
+    <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions (e.g., Asthma, Diabetes, Heart Disease)" onchange="saveProfile()"></textarea>
+
+    <div id="clientStatus" class="status-text" style="color: var(--yellow);">Connecting...</div>
   </div>
 
   <script>
-    function sendEmergencyAlert() {
-      const statusText = document.getElementById('status-text');
-      statusText.innerText = "Requesting location permission...";
+    let peer = null;
+    let conn = null;
 
-      if (!navigator.geolocation) {
-        statusText.innerText = "Geolocation is not supported by your device.";
-        return;
+    function initPeer() {
+      if (peer) peer.destroy();
+      peer = new Peer();
+
+      peer.on('open', () => {
+        const status = document.getElementById('clientStatus');
+        status.innerText = "System Ready to Transmit";
+        status.style.color = "var(--green)";
+      });
+
+      peer.on('error', (err) => {
+        const status = document.getElementById('clientStatus');
+        status.innerText = "Connection Error. Refresh page.";
+        status.style.color = "var(--red)";
+      });
+    }
+
+    // Save Medical Profile Locally
+    function saveProfile() {
+      const profile = {
+        name: document.getElementById('clientName').value,
+        phone: document.getElementById('clientPhone').value,
+        bloodGroup: document.getElementById('bloodGroup').value,
+        emergencyContact: document.getElementById('emergencyContact').value,
+        allergies: document.getElementById('allergies').value,
+        medicalConditions: document.getElementById('medicalConditions').value
+      };
+      localStorage.setItem('sos_patient_profile', JSON.stringify(profile));
+    }
+
+    // Load Medical Profile Locally
+    function loadProfile() {
+      const saved = localStorage.getItem('sos_patient_profile');
+      if (saved) {
+        const profile = JSON.parse(saved);
+        document.getElementById('clientName').value = profile.name || '';
+        document.getElementById('clientPhone').value = profile.phone || '';
+        document.getElementById('bloodGroup').value = profile.bloodGroup || 'Not Specified';
+        document.getElementById('emergencyContact').value = profile.emergencyContact || '';
+        document.getElementById('allergies').value = profile.allergies || '';
+        document.getElementById('medicalConditions').value = profile.medicalConditions || '';
+      }
+    }
+
+    function sendSOS() {
+      const status = document.getElementById('clientStatus');
+      status.style.color = "var(--yellow)";
+      status.innerText = "Retrieving GPS Location...";
+
+      if (document.getElementById('autoCall112').checked) {
+        window.location.href = "tel:112";
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          const timestamp = new Date().toLocaleTimeString();
+      const transmitData = (lat = null, lng = null) => {
+        const channelId = document.getElementById('roomId').value.trim();
+        status.innerText = "Transmitting to Hospital...";
+        
+        conn = peer.connect(channelId);
 
-          const emergencyData = {
-            latitude: lat,
-            longitude: lng,
-            time: timestamp,
-            status: "EMERGENCY ACTIVE"
+        conn.on('open', () => {
+          const payload = {
+            type: 'SOS_ALERT',
+            name: document.getElementById('clientName').value || 'Anonymous',
+            phone: document.getElementById('clientPhone').value || 'Not provided',
+            manualAddress: document.getElementById('manualAddress').value || 'None specified',
+            bloodGroup: document.getElementById('bloodGroup').value,
+            allergies: document.getElementById('allergies').value || 'None',
+            conditions: document.getElementById('medicalConditions').value || 'None',
+            emergencyContact: document.getElementById('emergencyContact').value || 'N/A',
+            lat: lat,
+            lng: lng,
+            time: new Date().toLocaleTimeString()
           };
+          conn.send(payload);
+          status.innerText = "🚨 SOS DISPATCHED TO HOSPITAL!";
+          status.style.color = "var(--green)";
+        });
 
-          // Transmit data to index.html via localStorage
-          localStorage.setItem("sea_emergency_signal", JSON.stringify(emergencyData));
+        conn.on('data', (data) => {
+          if (data.type === 'ACKNOWLEDGED') {
+            status.innerText = "✅ Hospital Acknowledged & Help Dispatched!";
+          }
+        });
 
-          statusText.innerHTML = `<b style="color: #00e676;">ALERT SENT!</b><br>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}<br>Time: ${timestamp}`;
-        },
-        (error) => {
-          statusText.innerHTML = `<span style="color: #ff5252;">Location access denied or failed.<br>Please enable GPS.</span>`;
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+        setTimeout(() => {
+          if (!conn || !conn.open) {
+            status.innerText = "Error: Hospital device offline or incorrect code!";
+            status.style.color = "var(--red)";
+          }
+        }, 6000);
+      };
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => transmitData(pos.coords.latitude, pos.coords.longitude),
+          (err) => {
+            status.innerText = "GPS unavailable. Transmitting manual data...";
+            transmitData(null, null);
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        transmitData(null, null);
+      }
     }
+
+    window.onload = () => {
+      loadProfile();
+      initPeer();
+    };
   </script>
 </body>
 </html>
