@@ -147,7 +147,7 @@
 <body>
 
   <div class="client-card">
-    <!-- Updated App Header -->
+    <!-- App Header -->
     <div class="app-header">
       <h1 class="app-title">SEA App</h1>
       <p class="app-subtitle">SOS-Emergency-Attendance</p>
@@ -158,7 +158,7 @@
 
     <div class="channel-box">
       <small style="color:#aaa;">Hospital Code: </small>
-      <input type="text" id="roomId" value="hospital-sos-99" style="width: auto; padding: 4px; text-align: center; font-weight: bold;" onchange="initPeer()">
+      <input type="text" id="roomId" value="sea-hospital-99" style="width: auto; padding: 4px; text-align: center; font-weight: bold;" onchange="initPeer()">
     </div>
 
     <!-- SOS Trigger Button -->
@@ -212,7 +212,7 @@
 
       peer.on('open', () => {
         const status = document.getElementById('clientStatus');
-        status.innerText = "SEA Ready to Transmit";
+        status.innerText = "SEA System Ready to Transmit";
         status.style.color = "var(--green)";
       });
 
