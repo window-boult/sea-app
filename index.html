@@ -3,145 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEA Hospital Dashboard</title>
+  <title>Hospital Emergency Dispatch Host</title>
+  
+  <!-- Leaflet Maps CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- PeerJS for WebRTC Connection -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #1a002c;
+      --light-purple: #3a005f;
+      --green: #00e676;
+      --red: #ff1744;
+      --yellow: #ffea00;
+    }
+
+    * { box-sizing: border-box; }
     body {
-      background-color: #0a0a0c;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 30px;
-    }
-
-    .header {
+      margin: 0;
+      padding: 15px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--purple);
+      color: #fff;
+      min-height: 100vh;
       display: flex;
+      flex-direction: column;
+    }
+
+    .hospital-header {
+      background: var(--light-purple);
+      padding: 15px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--green);
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #222;
-      margin-bottom: 30px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    .header img {
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      margin-right: 15px;
+    .siren-active {
+      animation: flashSiren 0.5s infinite alternate;
+    }
+    @keyframes flashSiren {
+      0% { background-color: var(--light-purple); box-shadow: 0 0 10px var(--green); }
+      100% { background-color: #990000; box-shadow: 0 0 40px var(--red); }
     }
 
-    .header h1 {
-      font-size: 24px;
-      color: #00e676;
+    .btn-stop {
+      background: var(--green);
+      color: #000;
+      font-weight: bold;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
     }
 
-    .dashboard-grid {
+    .channel-id-box {
+      background: #0d0017;
+      border: 1px solid var(--light-purple);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+
+    .hospital-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      flex: 1;
+    }
+    @media (min-width: 768px) {
+      .hospital-layout { grid-template-columns: 360px 1fr; }
     }
 
-    .card {
-      background-color: #141419;
-      border: 1px solid #282830;
+    .details-panel {
+      background: #0d0017;
+      border: 1px solid var(--light-purple);
       border-radius: 12px;
       padding: 20px;
+      overflow-y: auto;
+      max-height: 80vh;
     }
 
-    .card h2 {
-      font-size: 16px;
-      color: #888899;
-      margin-bottom: 15px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .status-badge {
+    .badge {
       display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      background-color: #222;
-      color: #888;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .status-badge.active {
-      background-color: #ff1744;
-      color: #ffffff;
-      animation: blink 1.5s infinite;
-    }
-
-    @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    .data-field {
-      font-size: 18px;
-      margin-top: 10px;
-      font-family: monospace;
-      color: #00e676;
-    }
-
-    a.map-btn {
-      display: inline-block;
-      margin-top: 15px;
-      padding: 10px 18px;
-      background-color: #2979ff;
+      background: var(--red);
       color: white;
-      text-decoration: none;
+      padding: 3px 8px;
       border-radius: 6px;
-      font-size: 14px;
       font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    #map {
+      height: 100%;
+      min-height: 400px;
+      border-radius: 12px;
+      border: 2px solid var(--green);
     }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <img src="logo.png" alt="SEA Logo" onerror="this.style.display='none'">
-    <h1>SEA Hospital Emergency Control Dashboard</h1>
+  <!-- Connection ID Setting -->
+  <div>
+    <div class="channel-id-box">
+      <label>Hospital Connection ID: </label>
+      <input type="text" id="roomId" value="hospital-sos-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
+    </div>
   </div>
 
-  <div class="dashboard-grid">
-    <div class="card">
-      <h2>Alert System Status</h2>
-      <div id="signal-status" class="status-badge">AWAITING PATIENT SIGNAL</div>
-      <div id="signal-time" class="data-field" style="color: #888;">No signals received yet.</div>
+  <!-- Header Bar -->
+  <div class="hospital-header" id="sirenHeader">
+    <div>
+      <h2 style="margin:0;">🏥 Hospital Dispatch Dashboard</h2>
+      <span id="hospitalStatusLabel">Status: Starting connection...</span>
     </div>
+    <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
+  </div>
 
-    <div class="card">
-      <h2>Patient GPS Location</h2>
-      <div id="gps-coords" class="data-field">--.------, --.------</div>
-      <div id="map-link-container"></div>
+  <!-- Main Layout -->
+  <div class="hospital-layout">
+    <div class="details-panel">
+      <h3 style="color: var(--green); margin-top:0;">Emergency & Triage Info</h3>
+      <div id="alertDetails">
+        <p style="color: #888;">Monitoring live incoming distress calls...</p>
+      </div>
     </div>
+    <div id="map"></div>
   </div>
 
   <script>
-    // Listen for real-time emergency events transmitted from client.html
-    window.addEventListener("storage", function(event) {
-      if (event.key === "sea_emergency_signal" && event.newValue) {
-        const data = JSON.parse(event.newValue);
-        
-        // Update Status
-        const statusBadge = document.getElementById("signal-status");
-        statusBadge.innerText = data.status;
-        statusBadge.classList.add("active");
+    let peer = null;
+    let conn = null;
+    let map = null;
+    let mapMarker = null;
+    let sirenInterval = null;
+    let audioCtx = null;
+    let oscillator = null;
 
-        // Update Time
-        document.getElementById("signal-time").innerText = "Received at: " + data.time;
+    function initMap() {
+      map = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+    }
 
-        // Update Coordinates
-        const coordsText = `Lat: ${data.latitude}, Lng: ${data.longitude}`;
-        document.getElementById("gps-coords").innerText = coordsText;
+    function initPeer() {
+      if (peer) peer.destroy();
+      const channelId = document.getElementById('roomId').value.trim();
 
-        // Generate Google Maps Direct Navigation Link
-        const mapsUrl = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
-        document.getElementById("map-link-container").innerHTML = `
-          <a href="${mapsUrl}" target="_blank" class="map-btn">📍 Open Location in Google Maps</a>
+      peer = new Peer(channelId);
+      
+      peer.on('open', (id) => {
+        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening for incoming SOS calls";
+      });
+
+      peer.on('connection', (connection) => {
+        conn = connection;
+        conn.on('data', (data) => {
+          if (data.type === 'SOS_ALERT') {
+            receiveSOS(data);
+          }
+        });
+      });
+
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change Hospital Connection ID.";
+        }
+      });
+    }
+
+    function receiveSOS(data) {
+      startSiren();
+
+      document.getElementById('sirenHeader').classList.add('siren-active');
+      document.getElementById('hospitalStatusLabel').innerText = "🚨 EMERGENCY DISTRESS SIGNAL RECEIVED!";
+
+      let locationHTML = "";
+      if (data.lat && data.lng) {
+        locationHTML = `
+          <p><strong>GPS:</strong> ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</p>
+          <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green); font-weight:bold;">Open in Google Maps ↗</a></p>
         `;
+        const coords = [data.lat, data.lng];
+        map.setView(coords, 16);
+
+        if (mapMarker) map.removeLayer(mapMarker);
+        mapMarker = L.marker(coords).addTo(map)
+          .bindPopup(`<b>${data.name}</b><br>Blood Group: ${data.bloodGroup}<br>Phone: ${data.phone}`)
+          .openPopup();
+      } else {
+        locationHTML = `<p style="color:var(--yellow);">⚠️ GPS Signal Unavailable (Relying on manual address)</p>`;
       }
-    });
+
+      document.getElementById('alertDetails').innerHTML = `
+        <p><strong>Time:</strong> ${data.time}</p>
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Phone:</strong> ${data.phone}</p>
+        <p><strong>Blood Group:</strong> <span class="badge">${data.bloodGroup}</span></p>
+        <hr style="border-color: var(--light-purple);">
+        <p><strong>Manual Address:</strong><br><span style="color:#ffea00;">${data.manualAddress}</span></p>
+        <hr style="border-color: var(--light-purple);">
+        <p><strong>Known Allergies:</strong> ${data.allergies}</p>
+        <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
+        <p><strong>Emergency Contact:</strong> ${data.emergencyContact}</p>
+        <hr style="border-color: var(--light-purple);">
+        ${locationHTML}
+      `;
+    }
+
+    function stopSiren() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator = null;
+      }
+      document.getElementById('sirenHeader').classList.remove('siren-active');
+      document.getElementById('hospitalStatusLabel').innerText = "Status: Alert Acknowledged / Siren Stopped";
+
+      if (conn && conn.open) {
+        conn.send({ type: 'ACKNOWLEDGED' });
+      }
+    }
+
+    function startSiren() {
+      if (oscillator) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+
+      let pitchToggle = false;
+      sirenInterval = setInterval(() => {
+        if (!oscillator) { clearInterval(sirenInterval); return; }
+        oscillator.frequency.setValueAtTime(pitchToggle ? 600 : 900, audioCtx.currentTime);
+        pitchToggle = !pitchToggle;
+      }, 400);
+
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.start();
+    }
+
+    window.onload = () => {
+      initMap();
+      initPeer();
+    };
   </script>
 </body>
 </html>
