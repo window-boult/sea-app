@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hospital Emergency Dispatch Host</title>
+  <title>SEA Dashboard - SOS Emergency Attendance</title>
   
   <!-- Leaflet Maps CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -44,6 +44,21 @@
       margin-bottom: 15px;
       flex-wrap: wrap;
       gap: 10px;
+    }
+
+    .header-title-box {
+      display: flex;
+      flex-direction: column;
+    }
+    .header-title-box h2 {
+      margin: 0;
+      color: var(--green);
+      font-size: 1.6rem;
+    }
+    .header-title-box small {
+      color: #ccc;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
     }
 
     .siren-active {
@@ -116,16 +131,17 @@
   <!-- Connection ID Setting -->
   <div>
     <div class="channel-id-box">
-      <label>Hospital Connection ID: </label>
-      <input type="text" id="roomId" value="hospital-sos-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
+      <label>SEA Hospital Connection ID: </label>
+      <input type="text" id="roomId" value="sea-hospital-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
     </div>
   </div>
 
   <!-- Header Bar -->
   <div class="hospital-header" id="sirenHeader">
-    <div>
-      <h2 style="margin:0;">🏥 Hospital Dispatch Dashboard</h2>
-      <span id="hospitalStatusLabel">Status: Starting connection...</span>
+    <div class="header-title-box">
+      <h2>🏥 SEA Dashboard</h2>
+      <small>SOS-EMERGENCY-ATTENDANCE CONTROL UNIT</small>
+      <span id="hospitalStatusLabel" style="margin-top: 5px;">Status: Starting connection...</span>
     </div>
     <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
   </div>
@@ -135,7 +151,7 @@
     <div class="details-panel">
       <h3 style="color: var(--green); margin-top:0;">Emergency & Triage Info</h3>
       <div id="alertDetails">
-        <p style="color: #888;">Monitoring live incoming distress calls...</p>
+        <p style="color: #888;">Monitoring live incoming SEA distress calls...</p>
       </div>
     </div>
     <div id="map"></div>
@@ -164,7 +180,7 @@
       peer = new Peer(channelId);
       
       peer.on('open', (id) => {
-        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening for incoming SOS calls";
+        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening for incoming SEA calls";
       });
 
       peer.on('connection', (connection) => {
@@ -178,7 +194,7 @@
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change Hospital Connection ID.";
+          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change SEA Connection ID.";
         }
       });
     }
@@ -187,7 +203,7 @@
       startSiren();
 
       document.getElementById('sirenHeader').classList.add('siren-active');
-      document.getElementById('hospitalStatusLabel').innerText = "🚨 EMERGENCY DISTRESS SIGNAL RECEIVED!";
+      document.getElementById('hospitalStatusLabel').innerText = "🚨 SEA EMERGENCY DISTRESS SIGNAL RECEIVED!";
 
       let locationHTML = "";
       if (data.lat && data.lng) {
@@ -228,7 +244,7 @@
         oscillator = null;
       }
       document.getElementById('sirenHeader').classList.remove('siren-active');
-      document.getElementById('hospitalStatusLabel').innerText = "Status: Alert Acknowledged / Siren Stopped";
+      document.getElementById('hospitalStatusLabel').innerText = "Status: SEA Alert Acknowledged / Siren Stopped";
 
       if (conn && conn.open) {
         conn.send({ type: 'ACKNOWLEDGED' });
