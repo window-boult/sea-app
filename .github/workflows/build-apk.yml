@@ -27,10 +27,10 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Build Android Project
+      - name: Generate Key & Build APK
         run: |
-          npx @bubblewrap/cli init --manifest=https://raw.githubusercontent.com/${{ github.repository }}/main/manifest.json
-          npx @bubblewrap/cli build
+          keytool -genkeypair -v -keystore android.keystore -alias android -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=SEA, OU=App, O=SEA, L=City, S=State, C=US"
+          npx @bubblewrap/cli build --signingKeyPath=./android.keystore --signingKeyAlias=android
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
