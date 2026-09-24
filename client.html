@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergency SOS Caller</title>
+  <title>SEA App - SOS Emergency Attendance</title>
   
   <!-- PeerJS for WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -38,6 +38,25 @@
       width: 100%;
       max-width: 450px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .app-title {
+      color: var(--green);
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .app-subtitle {
+      color: #aaa;
+      margin: 4px 0 0 0;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .sos-btn {
@@ -128,7 +147,11 @@
 <body>
 
   <div class="client-card">
-    <h1 style="color: var(--green); margin: 0 0 5px 0; text-align: center;">EMERGENCY SOS</h1>
+    <!-- Updated App Header -->
+    <div class="app-header">
+      <h1 class="app-title">SEA App</h1>
+      <p class="app-subtitle">SOS-Emergency-Attendance</p>
+    </div>
 
     <!-- Direct 112 Call Button -->
     <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
@@ -171,7 +194,7 @@
         <option value="AB+">AB+</option>
         <option value="AB-">AB-</option>
       </select>
-      <input type="text" id="emergencyContact" placeholder="Ice Contact / Relative Phone" onchange="saveProfile()">
+      <input type="text" id="emergencyContact" placeholder="ICE Contact / Relative Phone" onchange="saveProfile()">
     </div>
     <input type="text" id="allergies" placeholder="Known Allergies (e.g., Penicillin, Peanuts)" onchange="saveProfile()">
     <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions (e.g., Asthma, Diabetes, Heart Disease)" onchange="saveProfile()"></textarea>
@@ -189,13 +212,13 @@
 
       peer.on('open', () => {
         const status = document.getElementById('clientStatus');
-        status.innerText = "System Ready to Transmit";
+        status.innerText = "SEA Ready to Transmit";
         status.style.color = "var(--green)";
       });
 
       peer.on('error', (err) => {
         const status = document.getElementById('clientStatus');
-        status.innerText = "Connection Error. Refresh page.";
+        status.innerText = "Connection Error. Refresh app.";
         status.style.color = "var(--red)";
       });
     }
@@ -210,12 +233,12 @@
         allergies: document.getElementById('allergies').value,
         medicalConditions: document.getElementById('medicalConditions').value
       };
-      localStorage.setItem('sos_patient_profile', JSON.stringify(profile));
+      localStorage.setItem('sea_patient_profile', JSON.stringify(profile));
     }
 
     // Load Medical Profile Locally
     function loadProfile() {
-      const saved = localStorage.getItem('sos_patient_profile');
+      const saved = localStorage.getItem('sea_patient_profile');
       if (saved) {
         const profile = JSON.parse(saved);
         document.getElementById('clientName').value = profile.name || '';
@@ -258,7 +281,7 @@
             time: new Date().toLocaleTimeString()
           };
           conn.send(payload);
-          status.innerText = "🚨 SOS DISPATCHED TO HOSPITAL!";
+          status.innerText = "🚨 SEA EMERGENCY DISPATCHED!";
           status.style.color = "var(--green)";
         });
 
@@ -280,7 +303,6 @@
         navigator.geolocation.getCurrentPosition(
           (pos) => transmitData(pos.coords.latitude, pos.coords.longitude),
           (err) => {
-            // If GPS fails, still send manual address and medical details
             status.innerText = "GPS unavailable. Transmitting manual data...";
             transmitData(null, null);
           },
