@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SEA App - SOS Emergency Attendance</title>
   
-  <!-- PeerJS for WebRTC Connection -->
+  <!-- PeerJS for Cross-Network WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -40,33 +40,10 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
 
-    .app-header {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-
-    .app-logo {
-      width: 110px;
-      height: 110px;
-      margin: 0 auto 10px auto;
-      display: block;
-    }
-
-    .app-title {
-      color: var(--green);
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-
-    .app-subtitle {
-      color: #aaa;
-      margin: 4px 0 0 0;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+    .app-header { text-align: center; margin-bottom: 15px; }
+    .app-logo { width: 100px; height: 100px; margin: 0 auto 10px auto; display: block; }
+    .app-title { color: var(--green); margin: 0; font-size: 1.8rem; font-weight: 800; }
+    .app-subtitle { color: #aaa; margin: 4px 0 0 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
 
     .sos-btn {
       width: 160px;
@@ -130,33 +107,14 @@
       font-size: 0.9rem;
     }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-      color: #ccc;
-      margin: 10px 0;
-    }
-
-    .status-text {
-      font-weight: bold;
-      margin-top: 15px;
-      text-align: center;
-      font-size: 1rem;
-    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .checkbox-container { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #ccc; margin: 10px 0; }
+    .status-text { font-weight: bold; margin-top: 15px; text-align: center; font-size: 1rem; }
   </style>
 </head>
 <body>
 
   <div class="client-card">
-    <!-- Embedded Header Logo -->
     <div class="app-header">
       <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
         <defs>
@@ -164,10 +122,6 @@
             <stop offset="0%" stop-color="#3a005f"/>
             <stop offset="100%" stop-color="#0d0017"/>
           </radialGradient>
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
           <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#ff1744"/>
             <stop offset="100%" stop-color="#b20000"/>
@@ -178,15 +132,13 @@
           </linearGradient>
         </defs>
         <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#3a005f" stroke-width="4"/>
-        <path d="M250,90 L360,130 C360,260 250,350 250,370 C250,350 140,260 140,130 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95" filter="url(#glow)"/>
-        <path d="M230,170 H270 V210 H310 V250 H270 V290 H230 V250 H190 V210 H230 Z" fill="#ffffff" opacity="0.25"/>
-        <path d="M120,240 H190 L210,190 L235,280 L265,160 L290,260 L310,240 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+        <path d="M250,90 L360,130 C360,260 250,350 250,370 C250,350 140,260 140,130 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
+        <path d="M120,240 H190 L210,190 L235,280 L265,160 L290,260 L310,240 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <h1 class="app-title">SEA App</h1>
       <p class="app-subtitle">SOS-Emergency-Attendance</p>
     </div>
 
-    <!-- Direct 112 Call Button -->
     <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
 
     <div class="channel-box">
@@ -194,43 +146,35 @@
       <input type="text" id="roomId" value="sea-hospital-99" style="width: auto; padding: 4px; text-align: center; font-weight: bold;" onchange="initPeer()">
     </div>
 
-    <!-- SOS Trigger Button -->
     <button class="sos-btn" onclick="sendSOS()">SOS</button>
 
     <div class="checkbox-container">
       <input type="checkbox" id="autoCall112" style="width:auto; margin:0;">
-      <label for="autoCall112">Automatically open 112 dialer when SOS is pressed</label>
+      <label for="autoCall112">Open 112 phone dialer on SOS press</label>
     </div>
 
-    <!-- Patient Basic Info -->
     <div class="section-title">Personal Info</div>
     <div class="grid-2">
       <input type="text" id="clientName" placeholder="Full Name" onchange="saveProfile()">
       <input type="tel" id="clientPhone" placeholder="Phone Number" onchange="saveProfile()">
     </div>
 
-    <!-- Location & Address Details -->
-    <div class="section-title">Manual Address / Landmark (Optional)</div>
-    <textarea id="manualAddress" rows="2" placeholder="House/Apt No, Street Name, Floor, Landmark (helps if GPS is inaccurate)"></textarea>
+    <div class="section-title">Manual Address / Landmark</div>
+    <textarea id="manualAddress" rows="2" placeholder="House/Apt No, Street Name, Floor, Landmark"></textarea>
 
-    <!-- Detailed Medical Profile -->
-    <div class="section-title">Medical Profile (Saved locally)</div>
+    <div class="section-title">Medical Profile</div>
     <div class="grid-2">
       <select id="bloodGroup" onchange="saveProfile()">
         <option value="Not Specified">Select Blood Group</option>
-        <option value="A+">A+</option>
-        <option value="A-">A-</option>
-        <option value="B+">B+</option>
-        <option value="B-">B-</option>
-        <option value="O+">O+</option>
-        <option value="O-">O-</option>
-        <option value="AB+">AB+</option>
-        <option value="AB-">AB-</option>
+        <option value="A+">A+</option><option value="A-">A-</option>
+        <option value="B+">B+</option><option value="B-">B-</option>
+        <option value="O+">O+</option><option value="O-">O-</option>
+        <option value="AB+">AB+</option><option value="AB-">AB-</option>
       </select>
-      <input type="text" id="emergencyContact" placeholder="ICE Contact / Relative Phone" onchange="saveProfile()">
+      <input type="text" id="emergencyContact" placeholder="ICE Contact Phone" onchange="saveProfile()">
     </div>
-    <input type="text" id="allergies" placeholder="Known Allergies (e.g., Penicillin, Peanuts)" onchange="saveProfile()">
-    <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions (e.g., Asthma, Diabetes, Heart Disease)" onchange="saveProfile()"></textarea>
+    <input type="text" id="allergies" placeholder="Known Allergies" onchange="saveProfile()">
+    <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions" onchange="saveProfile()"></textarea>
 
     <div id="clientStatus" class="status-text" style="color: var(--yellow);">Connecting...</div>
   </div>
@@ -238,10 +182,23 @@
   <script>
     let peer = null;
     let conn = null;
+    let watchId = null;
 
     function initPeer() {
       if (peer) peer.destroy();
-      peer = new Peer();
+      
+      peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        },
+        debug: 1
+      });
 
       peer.on('open', () => {
         const status = document.getElementById('clientStatus');
@@ -284,19 +241,21 @@
     function sendSOS() {
       const status = document.getElementById('clientStatus');
       status.style.color = "var(--yellow)";
-      status.innerText = "Acquiring GPS Signal...";
+      status.innerText = "Connecting to Hospital Dashboard...";
 
       if (document.getElementById('autoCall112').checked) {
         window.location.href = "tel:112";
       }
 
-      const transmitData = (lat = null, lng = null) => {
-        const channelId = document.getElementById('roomId').value.trim();
-        status.innerText = "Transmitting to Hospital...";
-        
-        conn = peer.connect(channelId);
+      const channelId = document.getElementById('roomId').value.trim();
+      conn = peer.connect(channelId, { reliable: true });
 
-        conn.on('open', () => {
+      conn.on('open', () => {
+        status.innerText = "🚨 Connected! Acquiring High-Precision GPS...";
+        status.style.color = "var(--green)";
+
+        // Helper to transmit payload
+        const sendPayload = (lat, lng, accuracy) => {
           const payload = {
             type: 'SOS_ALERT',
             name: document.getElementById('clientName').value || 'Anonymous',
@@ -308,48 +267,58 @@
             emergencyContact: document.getElementById('emergencyContact').value || 'N/A',
             lat: lat,
             lng: lng,
+            accuracy: accuracy,
             time: new Date().toLocaleTimeString()
           };
           conn.send(payload);
-          status.innerText = "🚨 SEA EMERGENCY DISPATCHED!";
-          status.style.color = "var(--green)";
-        });
+          status.innerText = "🚨 SEA DISTRESS TRANSMITTED (GPS Active)";
+        };
 
-        conn.on('data', (data) => {
-          if (data.type === 'ACKNOWLEDGED') {
-            status.innerText = "✅ Hospital Acknowledged & Help Dispatched!";
-          }
-        });
-
+        // Fallback immediate transmission if GPS lags
+        let initialSent = false;
         setTimeout(() => {
-          if (!conn || !conn.open) {
-            status.innerText = "Error: Hospital device offline or incorrect code!";
-            status.style.color = "var(--red)";
+          if (!initialSent) {
+            sendPayload(null, null, null);
+            initialSent = true;
           }
-        }, 6000);
-      };
+        }, 5000);
 
-      // Robust Multi-tier GPS Fetching
-      if ("geolocation" in navigator) {
-        // Step 1: Attempt fast resolution with high accuracy allowed but not forced
-        navigator.geolocation.getCurrentPosition(
-          (pos) => transmitData(pos.coords.latitude, pos.coords.longitude),
-          (err) => {
-            // Step 2: Fallback to low precision network lookup if satellites fail
-            navigator.geolocation.getCurrentPosition(
-              (posFallback) => transmitData(posFallback.coords.latitude, posFallback.coords.longitude),
-              (errFallback) => {
-                status.innerText = "GPS unavailable. Sending profile data...";
-                transmitData(null, null);
-              },
-              { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
-            );
-          },
-          { enableHighAccuracy: true, timeout: 4000, maximumAge: 30000 }
-        );
-      } else {
-        transmitData(null, null);
-      }
+        // REAL-TIME GPS HARDWARE WATCHER
+        if ("geolocation" in navigator) {
+          if (watchId) navigator.geolocation.clearWatch(watchId);
+          
+          watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              initialSent = true;
+              sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+            },
+            (err) => {
+              if (!initialSent) {
+                sendPayload(null, null, null);
+                initialSent = true;
+              }
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0
+            }
+          );
+        }
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'ACKNOWLEDGED') {
+          status.innerText = "✅ Hospital Acknowledged & Dispatch En Route!";
+        }
+      });
+
+      setTimeout(() => {
+        if (!conn || !conn.open) {
+          status.innerText = "Error: Hospital offline or incorrect code!";
+          status.style.color = "var(--red)";
+        }
+      }, 8000);
     }
 
     window.onload = () => {
