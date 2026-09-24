@@ -284,7 +284,7 @@
     function sendSOS() {
       const status = document.getElementById('clientStatus');
       status.style.color = "var(--yellow)";
-      status.innerText = "Retrieving GPS Location...";
+      status.innerText = "Acquiring GPS Signal...";
 
       if (document.getElementById('autoCall112').checked) {
         window.location.href = "tel:112";
@@ -329,14 +329,23 @@
         }, 6000);
       };
 
+      // Robust Multi-tier GPS Fetching
       if ("geolocation" in navigator) {
+        // Step 1: Attempt fast resolution with high accuracy allowed but not forced
         navigator.geolocation.getCurrentPosition(
           (pos) => transmitData(pos.coords.latitude, pos.coords.longitude),
           (err) => {
-            status.innerText = "GPS unavailable. Transmitting manual data...";
-            transmitData(null, null);
+            // Step 2: Fallback to low precision network lookup if satellites fail
+            navigator.geolocation.getCurrentPosition(
+              (posFallback) => transmitData(posFallback.coords.latitude, posFallback.coords.longitude),
+              (errFallback) => {
+                status.innerText = "GPS unavailable. Sending profile data...";
+                transmitData(null, null);
+              },
+              { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+            );
           },
-          { enableHighAccuracy: true, timeout: 5000 }
+          { enableHighAccuracy: true, timeout: 4000, maximumAge: 30000 }
         );
       } else {
         transmitData(null, null);
