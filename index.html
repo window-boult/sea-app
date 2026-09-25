@@ -32,33 +32,69 @@
       align-items: center;
     }
 
-    /* Portal Selection Screen */
-    .portal-container {
+    /* Top Pill Navigation Bar */
+    .nav-pill-container {
+      background: #0d0017;
+      border: 1px solid var(--light-purple);
+      padding: 4px;
+      border-radius: 30px;
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .nav-pill {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: none;
+      background: transparent;
+      color: #aaa;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-pill.active {
+      background: var(--light-purple);
+      color: var(--green);
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+    }
+
+    /* App Header Logo */
+    .app-header { text-align: center; margin-bottom: 10px; }
+    .app-logo { width: 80px; height: 80px; margin: 0 auto 5px auto; display: block; }
+    .app-title { color: var(--green); margin: 0; font-size: 1.6rem; font-weight: 900; }
+    .app-subtitle { color: #aaa; margin: 2px 0 15px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Common Card Container */
+    .view-card {
       width: 100%;
       max-width: 450px;
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    .app-logo { width: 110px; height: 110px; margin: 0 auto 10px auto; display: block; }
-    .app-title { color: var(--green); margin: 0; font-size: 2.2rem; font-weight: 900; }
-    .app-subtitle { color: #aaa; margin: 4px 0 25px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; }
-
-    .role-btn {
-      width: 100%;
-      padding: 18px;
-      margin: 10px 0;
-      border-radius: 12px;
+      background: #0d0017;
+      padding: 20px;
+      border-radius: 20px;
       border: 2px solid var(--light-purple);
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      color: white;
-      transition: all 0.2s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-    .btn-patient { background: linear-gradient(135deg, #ff1744, #b20000); border-color: #ff5252; }
-    .btn-hospital { background: linear-gradient(135deg, #3a005f, #1a002c); border-color: var(--green); color: var(--green); }
-    .role-btn:active { transform: scale(0.97); }
+    .view-card.wide { max-width: 1000px; }
+
+    /* SOS Button */
+    .sos-btn {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 5px solid #fff;
+      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
+      color: white;
+      font-weight: 900;
+      font-size: 2.4rem;
+      cursor: pointer;
+      box-shadow: 0 0 30px var(--red);
+      margin: 15px auto;
+      display: block;
+      transition: transform 0.1s;
+    }
+    .sos-btn:active { transform: scale(0.93); }
 
     /* Login Modal */
     .modal-overlay {
@@ -80,36 +116,7 @@
       text-align: center;
     }
 
-    /* Common Card Styling */
-    .view-card {
-      display: none;
-      width: 100%;
-      max-width: 900px;
-      background: #0d0017;
-      padding: 20px;
-      border-radius: 20px;
-      border: 2px solid var(--light-purple);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    }
-
-    /* Patient View UI */
-    .sos-btn {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      border: 5px solid #fff;
-      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
-      color: white;
-      font-weight: 900;
-      font-size: 2.5rem;
-      cursor: pointer;
-      box-shadow: 0 0 30px var(--red);
-      margin: 20px auto;
-      display: block;
-    }
-    .sos-btn:active { transform: scale(0.93); }
-
-    /* Hospital View UI */
+    /* Hospital UI */
     .hospital-header {
       background: var(--light-purple);
       padding: 15px;
@@ -139,11 +146,11 @@
 
     #map { height: 400px; border-radius: 12px; border: 2px solid var(--green); }
 
-    /* Form Controls */
+    /* Forms */
     input, textarea, select {
       width: 100%;
       padding: 10px;
-      margin: 6px 0;
+      margin: 5px 0;
       border-radius: 8px;
       border: 1px solid var(--light-purple);
       background: #1a002c;
@@ -152,67 +159,57 @@
     }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .badge { background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
-    .status-box { text-align: center; font-weight: bold; margin-top: 10px; font-size: 1rem; color: var(--yellow); }
-    .back-btn { background: #333; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; float: right; }
+    .status-box { text-align: center; font-weight: bold; margin-top: 10px; font-size: 0.95rem; color: var(--yellow); }
+    .call-112-btn {
+      display: block; width: 100%; padding: 10px; background: var(--red); color: white;
+      text-align: center; text-decoration: none; font-weight: bold; border-radius: 8px; margin-bottom: 10px; border: 1px solid #fff;
+    }
   </style>
 </head>
 <body>
 
-  <!-- PORTAL SELECTION VIEW -->
-  <div id="portalView" class="portal-container">
-    <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
-      <defs>
-        <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#3a005f"/>
-          <stop offset="100%" stop-color="#0d0017"/>
-        </radialGradient>
-        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ff1744"/>
-          <stop offset="100%" stop-color="#b20000"/>
-        </linearGradient>
-        <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#00e676"/>
-          <stop offset="100%" stop-color="#b9f6ca"/>
-        </linearGradient>
-        <filter id="greenGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="8" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#3a005f" stroke-width="4"/>
-      <path d="M250,70 L360,110 C360,240 250,330 250,350 C250,330 140,240 140,110 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
-      <path d="M120,220 H190 L210,170 L235,260 L265,140 L290,240 L310,220 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="250" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="70" fill="#00e676" letter-spacing="4" filter="url(#greenGlow)">SEA</text>
-    </svg>
-    <h1 class="app-title">SEA App</h1>
-    <p class="app-subtitle">SOS Emergency Attendance</p>
-
-    <button class="role-btn btn-patient" onclick="openPatientView()">📱 Open Patient Portal</button>
-    <button class="role-btn btn-hospital" onclick="showLoginModal()">🏥 Open Hospital Dashboard</button>
+  <!-- TOP PILL NAVIGATION -->
+  <div class="nav-pill-container">
+    <button id="pillPatient" class="nav-pill active" onclick="switchView('patient')">📱 Patient App</button>
+    <button id="pillHospital" class="nav-pill" onclick="switchView('hospital')">🏥 Hospital Dashboard</button>
   </div>
 
-  <!-- HOSPITAL LOGIN MODAL -->
-  <div id="loginModal" class="modal-overlay">
-    <div class="login-card">
-      <h3 style="color:var(--green); margin-top:0;">Hospital Login</h3>
-      <input type="text" id="loginUser" placeholder="Username">
-      <input type="password" id="loginPass" placeholder="Password">
-      <p id="loginError" style="color:var(--red); font-size:0.85rem; display:none;">Invalid credentials!</p>
-      <div style="margin-top:15px; display:flex; gap:8px;">
-        <button style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="verifyLogin()">Login</button>
-        <button style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="hideLoginModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PATIENT VIEW -->
+  <!-- PATIENT PORTAL (DEFAULT VIEW) -->
   <div id="patientCard" class="view-card">
-    <button class="back-btn" onclick="showPortal()">← Change Role</button>
-    <h2 style="color:var(--green); margin-top:0;">Patient SOS Portal</h2>
+    <div class="app-header">
+      <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+        <defs>
+          <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#3a005f"/>
+            <stop offset="100%" stop-color="#0d0017"/>
+          </radialGradient>
+          <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff1744"/>
+            <stop offset="100%" stop-color="#b20000"/>
+          </linearGradient>
+          <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00e676"/>
+            <stop offset="100%" stop-color="#b9f6ca"/>
+          </linearGradient>
+          <filter id="greenGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#3a005f" stroke-width="4"/>
+        <path d="M250,70 L360,110 C360,240 250,330 250,350 C250,330 140,240 140,110 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
+        <path d="M120,220 H190 L210,170 L235,260 L265,140 L290,240 L310,220 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="250" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="70" fill="#00e676" letter-spacing="4" filter="url(#greenGlow)">SEA</text>
+      </svg>
+      <h1 class="app-title">SEA App</h1>
+      <p class="app-subtitle">SOS Emergency Attendance</p>
+    </div>
 
-    <div style="background:#1a002c; padding:8px; border-radius:8px; border:1px solid var(--light-purple); margin-bottom:10px;">
-      <label style="font-size:0.85rem; color:#aaa;">Hospital Target ID: </label>
-      <input type="text" id="hospitalIdInput" value="sea-hospital-99" style="width:auto; padding:4px; text-align:center; font-weight:bold;">
+    <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
+
+    <div style="background:#1a002c; padding:8px; border-radius:8px; border:1px solid var(--light-purple); margin-bottom:10px; text-align:center;">
+      <small style="color:#aaa;">Hospital Target Code: </small>
+      <input type="text" id="hospitalIdInput" value="sea-hospital-99" style="width:auto; padding:3px 6px; text-align:center; font-weight:bold;">
     </div>
 
     <button class="sos-btn" onclick="triggerSOS()">SOS</button>
@@ -235,14 +232,26 @@
     <div id="patientStatus" class="status-box">System Ready</div>
   </div>
 
+  <!-- HOSPITAL LOGIN MODAL -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="login-card">
+      <h3 style="color:var(--green); margin-top:0;">Hospital Login</h3>
+      <input type="text" id="loginUser" placeholder="Username">
+      <input type="password" id="loginPass" placeholder="Password">
+      <p id="loginError" style="color:var(--red); font-size:0.85rem; display:none;">Invalid credentials!</p>
+      <div style="margin-top:15px; display:flex; gap:8px;">
+        <button style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="verifyLogin()">Login</button>
+        <button style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="switchView('patient')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HOSPITAL DASHBOARD VIEW -->
-  <div id="hospitalCard" class="view-card" style="max-width:1100px;">
-    <button class="back-btn" onclick="showPortal()">← Change Role</button>
-    
+  <div id="hospitalCard" class="view-card wide" style="display:none;">
     <div class="hospital-header" id="sirenHeader">
       <div>
         <h2 style="margin:0; color:var(--green);">SEA Control Unit</h2>
-        <small id="hospitalIDDisplay">Hospital Code: sea-hospital-99</small>
+        <small id="hospitalIDDisplay">Listening Code: sea-hospital-99</small>
         <div id="hStatus" style="font-weight:bold; margin-top:4px;">Status: Online & Listening</div>
       </div>
       <button style="background:var(--green); border:none; padding:10px 18px; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
@@ -251,57 +260,66 @@
     <div class="hospital-grid">
       <div style="background:#0d0017; border:1px solid var(--light-purple); padding:15px; border-radius:12px; overflow-y:auto; max-height:450px;">
         <h3 style="color:var(--green); margin-top:0;">Live Emergency Data</h3>
-        <div id="alertDetails"><p style="color:#888;">Waiting for SOS signals...</p></div>
+        <div id="alertDetails"><p style="color:#888;">Waiting for live SOS signals...</p></div>
       </div>
       <div id="map"></div>
     </div>
   </div>
 
   <script>
-    // BroadcastChannel enables Instant Cross-Tab Communication without internet
     const channel = new BroadcastChannel('sea_emergency_network');
+    let isAuthenticated = false;
     let map = null, mapMarker = null, accuracyCircle = null;
     let audioCtx = null, oscillator = null, sirenInterval = null;
+    let gpsWatchId = null;
 
-    // View Navigation
-    function showPortal() {
-      document.getElementById('portalView').style.display = 'block';
-      document.getElementById('patientCard').style.display = 'none';
-      document.getElementById('hospitalCard').style.display = 'none';
+    // Switch Tabs via Pill
+    function switchView(target) {
+      if (target === 'patient') {
+        document.getElementById('patientCard').style.display = 'block';
+        document.getElementById('hospitalCard').style.display = 'none';
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('pillPatient').classList.add('active');
+        document.getElementById('pillHospital').classList.remove('active');
+      } else if (target === 'hospital') {
+        if (!isAuthenticated) {
+          document.getElementById('loginModal').style.display = 'flex';
+        } else {
+          document.getElementById('patientCard').style.display = 'none';
+          document.getElementById('hospitalCard').style.display = 'block';
+          document.getElementById('pillHospital').classList.add('active');
+          document.getElementById('pillPatient').classList.remove('active');
+          initMap();
+        }
+      }
     }
-
-    function openPatientView() {
-      document.getElementById('portalView').style.display = 'none';
-      document.getElementById('patientCard').style.display = 'block';
-    }
-
-    function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
-    function hideLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
     function verifyLogin() {
       const u = document.getElementById('loginUser').value.trim();
       const p = document.getElementById('loginPass').value.trim();
 
-      // Requested Credentials: skim hospital / skim123
       if (u === "skim hospital" && p === "skim123") {
-        hideLoginModal();
-        document.getElementById('portalView').style.display = 'none';
+        isAuthenticated = true;
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('patientCard').style.display = 'none';
         document.getElementById('hospitalCard').style.display = 'block';
+        document.getElementById('pillHospital').classList.add('active');
+        document.getElementById('pillPatient').classList.remove('active');
         initMap();
       } else {
         document.getElementById('loginError').style.display = 'block';
       }
     }
 
-    // Patient Trigger
+    // Precise SOS Transmitter
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal & Acquiring GPS...";
+      status.innerText = "🚨 Transmitting Distress Signal & Acquiring High-Precision GPS...";
       status.style.color = "var(--yellow)";
 
       const targetId = document.getElementById('hospitalIdInput').value.trim();
 
-      const sendData = (lat, lng, accuracy) => {
+      const sendPayload = (lat, lng, accuracy) => {
         const payload = {
           type: 'SOS_ALERT',
           targetHospitalId: targetId,
@@ -318,35 +336,50 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // Broadcast across all open tabs instantly
+        // Channel transmission (Fastest) + localStorage backup (Cross-device/tab sync)
         channel.postMessage(payload);
-        status.innerText = "🚨 SOS TRANSMITTED LIVE TO HOSPITAL!";
+        localStorage.setItem('sea_last_sos_event', JSON.stringify(payload));
+        
+        status.innerText = "🚨 DISTRESS TRANSMITTED LIVE TO HOSPITAL!";
         status.style.color = "var(--green)";
       };
 
-      // Real GPS Tracking with Immediate Fallback
+      // Send immediate payload first
+      sendPayload(null, null, null);
+
+      // Stream continuous high-accuracy GPS
       if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => sendData(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
-          (err) => sendData(null, null, null),
-          { enableHighAccuracy: true, timeout: 5000 }
+        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+
+        gpsWatchId = navigator.geolocation.watchPosition(
+          (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+          (err) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+              (e) => console.log("GPS unavailable")
+            );
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-      } else {
-        sendData(null, null, null);
       }
     }
 
-    // Hospital Dashboard Receiver
-    channel.onmessage = (event) => {
-      const data = event.data;
-      if (data.type === 'SOS_ALERT') {
-        const myHospitalId = "sea-hospital-99"; // Default hospital ID
-        
-        if (data.targetHospitalId === myHospitalId) {
+    // Hospital Event Handlers
+    channel.onmessage = (event) => processEmergencySignal(event.data);
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'sea_last_sos_event' && event.newValue) {
+        processEmergencySignal(JSON.parse(event.newValue));
+      }
+    });
+
+    function processEmergencySignal(data) {
+      if (data && data.type === 'SOS_ALERT') {
+        const currentTargetCode = document.getElementById('hospitalIdInput').value.trim();
+        if (data.targetHospitalId === currentTargetCode) {
           receiveSOS(data);
         }
       }
-    };
+    }
 
     function receiveSOS(data) {
       startSiren();
@@ -354,8 +387,9 @@
       document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
 
       let locationText = data.lat ? 
-        `<p><strong>GPS:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)} (±${Math.round(data.accuracy)}m)</p>` : 
-        `<p style="color:var(--yellow);">⚠️ Standard GPS unavailable (Using manual address)</p>`;
+        `<p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
+         <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">±${Math.round(data.accuracy)} meters</span></p>` : 
+        `<p style="color:var(--yellow);">⚠️ Acquiring precise GPS satellite fix... (Using manual address below)</p>`;
 
       document.getElementById('alertDetails').innerHTML = `
         <p><strong>Time:</strong> ${data.time}</p>
@@ -365,7 +399,7 @@
         <hr style="border-color:var(--light-purple)">
         <p><strong>Address:</strong> ${data.address}</p>
         <p><strong>Allergies:</strong> ${data.allergies}</p>
-        <p><strong>Pre-existing:</strong> ${data.conditions}</p>
+        <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
         <p><strong>ICE Contact:</strong> ${data.ice}</p>
         <hr style="border-color:var(--light-purple)">
         ${locationText}
