@@ -215,19 +215,23 @@
     <button class="sos-btn" onclick="triggerSOS()">SOS</button>
 
     <div class="grid-2">
-      <input type="text" id="pName" placeholder="Full Name" value="John Doe">
-      <input type="tel" id="pPhone" placeholder="Phone Number" value="+1 555-0199">
+      <input type="text" id="pName" placeholder="Full Name">
+      <input type="tel" id="pPhone" placeholder="Phone Number">
     </div>
-    <textarea id="pAddress" rows="2" placeholder="Manual Address / Landmark">Building 4B, Apt 201, Green Street</textarea>
+    <textarea id="pAddress" rows="2" placeholder="Manual Address / Landmark"></textarea>
     
     <div class="grid-2">
       <select id="pBlood">
-        <option value="O+">O+</option><option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option>
+        <option value="Unknown">Select Blood Group</option>
+        <option value="O+">O+</option><option value="O-">O-</option>
+        <option value="A+">A+</option><option value="A-">A-</option>
+        <option value="B+">B+</option><option value="B-">B-</option>
+        <option value="AB+">AB+</option><option value="AB-">AB-</option>
       </select>
-      <input type="text" id="pICE" placeholder="Emergency Contact" value="+1 555-0122">
+      <input type="text" id="pICE" placeholder="Emergency Contact (ICE)">
     </div>
-    <input type="text" id="pAllergies" placeholder="Known Allergies" value="Penicillin">
-    <textarea id="pConditions" rows="2" placeholder="Medical Conditions">Asthma</textarea>
+    <input type="text" id="pAllergies" placeholder="Known Allergies">
+    <textarea id="pConditions" rows="2" placeholder="Medical Conditions"></textarea>
 
     <div id="patientStatus" class="status-box">System Ready</div>
   </div>
@@ -311,32 +315,41 @@
       }
     }
 
-    // Precise SOS Transmitter
+    // Precise SOS Transmitter with Fallback Checks
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal & Acquiring High-Precision GPS...";
+      status.innerText = "🚨 Transmitting Distress Signal & Acquiring GPS...";
       status.style.color = "var(--yellow)";
 
       const targetId = document.getElementById('hospitalIdInput').value.trim();
+
+      // Retrieve form values with fallback checks
+      const nameVal = document.getElementById('pName').value.trim() || "Unknown";
+      const phoneVal = document.getElementById('pPhone').value.trim() || "Not Provided";
+      const addressVal = document.getElementById('pAddress').value.trim() || "Not Provided";
+      const bloodVal = document.getElementById('pBlood').value || "Unknown";
+      const iceVal = document.getElementById('pICE').value.trim() || "Not Provided";
+      const allergiesVal = document.getElementById('pAllergies').value.trim() || "None Listed";
+      const conditionsVal = document.getElementById('pConditions').value.trim() || "None Listed";
 
       const sendPayload = (lat, lng, accuracy) => {
         const payload = {
           type: 'SOS_ALERT',
           targetHospitalId: targetId,
-          name: document.getElementById('pName').value,
-          phone: document.getElementById('pPhone').value,
-          address: document.getElementById('pAddress').value,
-          blood: document.getElementById('pBlood').value,
-          ice: document.getElementById('pICE').value,
-          allergies: document.getElementById('pAllergies').value,
-          conditions: document.getElementById('pConditions').value,
+          name: nameVal,
+          phone: phoneVal,
+          address: addressVal,
+          blood: bloodVal,
+          ice: iceVal,
+          allergies: allergiesVal,
+          conditions: conditionsVal,
           lat: lat,
           lng: lng,
           accuracy: accuracy,
           time: new Date().toLocaleTimeString()
         };
         
-        // Channel transmission (Fastest) + localStorage backup (Cross-device/tab sync)
+        // Channel transmission + localStorage backup
         channel.postMessage(payload);
         localStorage.setItem('sea_last_sos_event', JSON.stringify(payload));
         
@@ -344,10 +357,10 @@
         status.style.color = "var(--green)";
       };
 
-      // Send immediate payload first
+      // Send initial payload
       sendPayload(null, null, null);
 
-      // Stream continuous high-accuracy GPS
+      // Stream high-accuracy GPS
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
 
