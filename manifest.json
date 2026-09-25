@@ -2,7 +2,7 @@
   "name": "SEA System - Emergency Attendance",
   "short_name": "SEA App",
   "description": "SOS Emergency Attendance system for instant distress signal broadcasting to hospitals.",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0d0017",
   "theme_color": "#1a002c",
