@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SEA App - SOS Emergency Attendance</title>
   <link rel="manifest" href="manifest.json">
-  
-  <!-- PeerJS for Cross-Network WebRTC Connection -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -42,13 +40,13 @@
     }
 
     .app-header { text-align: center; margin-bottom: 15px; }
-    .app-logo { width: 100px; height: 100px; margin: 0 auto 10px auto; display: block; }
+    .app-logo { width: 90px; height: 90px; margin: 0 auto 10px auto; display: block; }
     .app-title { color: var(--green); margin: 0; font-size: 1.8rem; font-weight: 800; }
     .app-subtitle { color: #aaa; margin: 4px 0 0 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
 
     .sos-btn {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       border-radius: 50%;
       border: 5px solid #fff;
       background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
@@ -109,7 +107,6 @@
     }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .checkbox-container { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #ccc; margin: 10px 0; }
     .status-text { font-weight: bold; margin-top: 15px; text-align: center; font-size: 1rem; }
   </style>
 </head>
@@ -158,11 +155,6 @@
 
     <button class="sos-btn" onclick="sendSOS()">SOS</button>
 
-    <div class="checkbox-container">
-      <input type="checkbox" id="autoCall112" style="width:auto; margin:0;">
-      <label for="autoCall112">Open 112 phone dialer on SOS press</label>
-    </div>
-
     <div class="section-title">Personal Info</div>
     <div class="grid-2">
       <input type="text" id="clientName" placeholder="Full Name" onchange="saveProfile()">
@@ -175,7 +167,7 @@
     <div class="section-title">Medical Profile</div>
     <div class="grid-2">
       <select id="bloodGroup" onchange="saveProfile()">
-        <option value="Not Specified">Select Blood Group</option>
+        <option value="Not Specified">Blood Group</option>
         <option value="A+">A+</option><option value="A-">A-</option>
         <option value="B+">B+</option><option value="B-">B-</option>
         <option value="O+">O+</option><option value="O-">O-</option>
@@ -186,7 +178,7 @@
     <input type="text" id="allergies" placeholder="Known Allergies" onchange="saveProfile()">
     <textarea id="medicalConditions" rows="2" placeholder="Pre-existing Conditions" onchange="saveProfile()"></textarea>
 
-    <div id="clientStatus" class="status-text" style="color: var(--yellow);">Connecting...</div>
+    <div id="clientStatus" class="status-text" style="color: var(--yellow);">Initializing SEA Network...</div>
   </div>
 
   <script>
@@ -195,6 +187,13 @@
     let watchId = null;
     let retryInterval = null;
     let isConnected = false;
+
+    // Read URL ?id= parameter if available
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlHospitalId = urlParams.get('id');
+    if (urlHospitalId) {
+      document.getElementById('roomId').value = urlHospitalId;
+    }
 
     function initPeer() {
       if (peer) peer.destroy();
@@ -253,10 +252,6 @@
       status.style.color = "var(--yellow)";
       status.innerText = "Connecting to Hospital Dashboard...";
 
-      if (document.getElementById('autoCall112').checked) {
-        window.location.href = "tel:112";
-      }
-
       if (retryInterval) clearInterval(retryInterval);
       isConnected = false;
 
@@ -266,7 +261,7 @@
           status.innerText = "⏳ Retrying connection to Hospital...";
           attemptConnection();
         }
-      }, 3500);
+      }, 3000);
     }
 
     function attemptConnection() {
@@ -286,7 +281,7 @@
         const sendPayload = (lat, lng, accuracy) => {
           const payload = {
             type: 'SOS_ALERT',
-            name: document.getElementById('clientName').value || 'Anonymous',
+            name: document.getElementById('clientName').value || 'Anonymous Patient',
             phone: document.getElementById('clientPhone').value || 'Not provided',
             manualAddress: document.getElementById('manualAddress').value || 'None specified',
             bloodGroup: document.getElementById('bloodGroup').value,
@@ -302,31 +297,27 @@
           status.innerText = "🚨 SEA DISTRESS TRANSMITTED (GPS Active)";
         };
 
-        let initialSent = false;
-        setTimeout(() => {
-          if (!initialSent) {
-            sendPayload(null, null, null);
-            initialSent = true;
-          }
-        }, 3000);
+        // Fallback transmission immediately
+        sendPayload(null, null, null);
 
+        // Start GPS Continuous Tracking
         if ("geolocation" in navigator) {
           if (watchId) navigator.geolocation.clearWatch(watchId);
           
           watchId = navigator.geolocation.watchPosition(
             (pos) => {
-              initialSent = true;
               sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
             },
             (err) => {
-              if (!initialSent) {
-                sendPayload(null, null, null);
-                initialSent = true;
-              }
+              console.warn("GPS High Accuracy Error, trying standard GPS...", err);
+              navigator.geolocation.getCurrentPosition(
+                (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+                (e) => console.log("GPS unavailable")
+              );
             },
             {
               enableHighAccuracy: true,
-              timeout: 15000,
+              timeout: 10000,
               maximumAge: 0
             }
           );
