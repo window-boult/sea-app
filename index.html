@@ -232,13 +232,11 @@
         const coords = [data.lat, data.lng];
         map.setView(coords, 17);
 
-        // Update Pin
         if (mapMarker) map.removeLayer(mapMarker);
         mapMarker = L.marker(coords).addTo(map)
           .bindPopup(`<b>${data.name}</b><br>Blood Group: ${data.bloodGroup}<br>Phone: ${data.phone}`)
           .openPopup();
 
-        // Update Accuracy Circle
         if (accuracyCircle) map.removeLayer(accuracyCircle);
         if (data.accuracy) {
           accuracyCircle = L.circle(coords, {
