@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEA Dashboard - SOS Emergency Attendance</title>
+  <title>SEA System - SOS Emergency Attendance</title>
+  <link rel="manifest" href="manifest.json">
   
+  <!-- Leaflet Map CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
     :root {
@@ -28,11 +29,90 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      align-items: center;
     }
 
+    /* Portal Selection Screen */
+    .portal-container {
+      width: 100%;
+      max-width: 450px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .app-logo { width: 110px; height: 110px; margin: 0 auto 10px auto; display: block; }
+    .app-title { color: var(--green); margin: 0; font-size: 2.2rem; font-weight: 900; }
+    .app-subtitle { color: #aaa; margin: 4px 0 25px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; }
+
+    .role-btn {
+      width: 100%;
+      padding: 18px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: 2px solid var(--light-purple);
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      transition: all 0.2s;
+    }
+    .btn-patient { background: linear-gradient(135deg, #ff1744, #b20000); border-color: #ff5252; }
+    .btn-hospital { background: linear-gradient(135deg, #3a005f, #1a002c); border-color: var(--green); color: var(--green); }
+    .role-btn:active { transform: scale(0.97); }
+
+    /* Login Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .login-card {
+      background: #0d0017;
+      padding: 25px;
+      border-radius: 16px;
+      border: 2px solid var(--green);
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+    }
+
+    /* Common Card Styling */
+    .view-card {
+      display: none;
+      width: 100%;
+      max-width: 900px;
+      background: #0d0017;
+      padding: 20px;
+      border-radius: 20px;
+      border: 2px solid var(--light-purple);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    /* Patient View UI */
+    .sos-btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 5px solid #fff;
+      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
+      color: white;
+      font-weight: 900;
+      font-size: 2.5rem;
+      cursor: pointer;
+      box-shadow: 0 0 30px var(--red);
+      margin: 20px auto;
+      display: block;
+    }
+    .sos-btn:active { transform: scale(0.93); }
+
+    /* Hospital View UI */
     .hospital-header {
       background: var(--light-purple);
-      padding: 15px 20px;
+      padding: 15px;
       border-radius: 12px;
       border: 1px solid var(--green);
       display: flex;
@@ -42,245 +122,273 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-
-    .header-left { display: flex; align-items: center; gap: 15px; }
-    .header-logo { width: 50px; height: 50px; }
-    .header-title-box h2 { margin: 0; color: var(--green); font-size: 1.6rem; }
-    .header-title-box small { color: #ccc; font-size: 0.8rem; letter-spacing: 1px; }
-
     .siren-active { animation: flashSiren 0.5s infinite alternate; }
     @keyframes flashSiren {
       0% { background-color: var(--light-purple); box-shadow: 0 0 10px var(--green); }
       100% { background-color: #990000; box-shadow: 0 0 40px var(--red); }
     }
 
-    .btn-stop {
-      background: var(--green);
-      color: #000;
-      font-weight: bold;
-      padding: 12px 22px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .channel-id-box {
-      background: #0d0017;
-      border: 1px solid var(--light-purple);
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: inline-block;
-      margin-bottom: 15px;
-    }
-
-    .hospital-layout {
+    .hospital-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 15px;
-      flex: 1;
     }
     @media (min-width: 768px) {
-      .hospital-layout { grid-template-columns: 360px 1fr; }
+      .hospital-grid { grid-template-columns: 320px 1fr; }
     }
 
-    .details-panel {
-      background: #0d0017;
+    #map { height: 400px; border-radius: 12px; border: 2px solid var(--green); }
+
+    /* Form Controls */
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
       border: 1px solid var(--light-purple);
-      border-radius: 12px;
-      padding: 20px;
-      overflow-y: auto;
-      max-height: 80vh;
-    }
-
-    .badge {
-      display: inline-block;
-      background: var(--red);
+      background: #1a002c;
       color: white;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: bold;
       font-size: 0.9rem;
     }
-
-    #map {
-      height: 100%;
-      min-height: 400px;
-      border-radius: 12px;
-      border: 2px solid var(--green);
-    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .badge { background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .status-box { text-align: center; font-weight: bold; margin-top: 10px; font-size: 1rem; color: var(--yellow); }
+    .back-btn { background: #333; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; float: right; }
   </style>
 </head>
 <body>
 
-  <div class="channel-id-box">
-    <label>SEA Hospital Connection ID: </label>
-    <input type="text" id="roomId" value="sea-hospital-99" style="padding:4px 8px; background:#1a002c; color:white; border:1px solid var(--light-purple); border-radius:4px;" onchange="initPeer()">
+  <!-- PORTAL SELECTION VIEW -->
+  <div id="portalView" class="portal-container">
+    <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+      <defs>
+        <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#3a005f"/>
+          <stop offset="100%" stop-color="#0d0017"/>
+        </radialGradient>
+        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ff1744"/>
+          <stop offset="100%" stop-color="#b20000"/>
+        </linearGradient>
+        <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00e676"/>
+          <stop offset="100%" stop-color="#b9f6ca"/>
+        </linearGradient>
+        <filter id="greenGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#3a005f" stroke-width="4"/>
+      <path d="M250,70 L360,110 C360,240 250,330 250,350 C250,330 140,240 140,110 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
+      <path d="M120,220 H190 L210,170 L235,260 L265,140 L290,240 L310,220 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="250" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="70" fill="#00e676" letter-spacing="4" filter="url(#greenGlow)">SEA</text>
+    </svg>
+    <h1 class="app-title">SEA App</h1>
+    <p class="app-subtitle">SOS Emergency Attendance</p>
+
+    <button class="role-btn btn-patient" onclick="openPatientView()">📱 Open Patient Portal</button>
+    <button class="role-btn btn-hospital" onclick="showLoginModal()">🏥 Open Hospital Dashboard</button>
   </div>
 
-  <div class="hospital-header" id="sirenHeader">
-    <div class="header-left">
-      <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
-        <defs>
-          <radialGradient id="bgGrad2" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#3a005f"/>
-            <stop offset="100%" stop-color="#0d0017"/>
-          </radialGradient>
-          <linearGradient id="shieldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ff1744"/>
-            <stop offset="100%" stop-color="#b20000"/>
-          </linearGradient>
-          <linearGradient id="pulseGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#00e676"/>
-            <stop offset="100%" stop-color="#b9f6ca"/>
-          </linearGradient>
-        </defs>
-        <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad2)" stroke="#3a005f" stroke-width="4"/>
-        <path d="M250,90 L360,130 C360,260 250,350 250,370 C250,350 140,260 140,130 Z" fill="url(#shieldGrad2)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
-        <path d="M120,240 H190 L210,190 L235,280 L265,160 L290,260 L310,240 H380" fill="none" stroke="url(#pulseGrad2)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div class="header-title-box">
-        <h2>SEA Dashboard</h2>
-        <small>SOS-EMERGENCY-ATTENDANCE CONTROL UNIT</small>
-        <span id="hospitalStatusLabel" style="margin-top: 5px; display:block; font-weight:bold;">Status: Starting connection...</span>
+  <!-- HOSPITAL LOGIN MODAL -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="login-card">
+      <h3 style="color:var(--green); margin-top:0;">Hospital Login</h3>
+      <input type="text" id="loginUser" placeholder="Username">
+      <input type="password" id="loginPass" placeholder="Password">
+      <p id="loginError" style="color:var(--red); font-size:0.85rem; display:none;">Invalid credentials!</p>
+      <div style="margin-top:15px; display:flex; gap:8px;">
+        <button style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="verifyLogin()">Login</button>
+        <button style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="hideLoginModal()">Cancel</button>
       </div>
     </div>
-    <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
   </div>
 
-  <div class="hospital-layout">
-    <div class="details-panel">
-      <h3 style="color: var(--green); margin-top:0;">Emergency & Triage Info</h3>
-      <div id="alertDetails">
-        <p style="color: #888;">Monitoring live incoming SEA distress calls...</p>
-      </div>
+  <!-- PATIENT VIEW -->
+  <div id="patientCard" class="view-card">
+    <button class="back-btn" onclick="showPortal()">← Change Role</button>
+    <h2 style="color:var(--green); margin-top:0;">Patient SOS Portal</h2>
+
+    <div style="background:#1a002c; padding:8px; border-radius:8px; border:1px solid var(--light-purple); margin-bottom:10px;">
+      <label style="font-size:0.85rem; color:#aaa;">Hospital Target ID: </label>
+      <input type="text" id="hospitalIdInput" value="sea-hospital-99" style="width:auto; padding:4px; text-align:center; font-weight:bold;">
     </div>
-    <div id="map"></div>
+
+    <button class="sos-btn" onclick="triggerSOS()">SOS</button>
+
+    <div class="grid-2">
+      <input type="text" id="pName" placeholder="Full Name" value="John Doe">
+      <input type="tel" id="pPhone" placeholder="Phone Number" value="+1 555-0199">
+    </div>
+    <textarea id="pAddress" rows="2" placeholder="Manual Address / Landmark">Building 4B, Apt 201, Green Street</textarea>
+    
+    <div class="grid-2">
+      <select id="pBlood">
+        <option value="O+">O+</option><option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option>
+      </select>
+      <input type="text" id="pICE" placeholder="Emergency Contact" value="+1 555-0122">
+    </div>
+    <input type="text" id="pAllergies" placeholder="Known Allergies" value="Penicillin">
+    <textarea id="pConditions" rows="2" placeholder="Medical Conditions">Asthma</textarea>
+
+    <div id="patientStatus" class="status-box">System Ready</div>
+  </div>
+
+  <!-- HOSPITAL DASHBOARD VIEW -->
+  <div id="hospitalCard" class="view-card" style="max-width:1100px;">
+    <button class="back-btn" onclick="showPortal()">← Change Role</button>
+    
+    <div class="hospital-header" id="sirenHeader">
+      <div>
+        <h2 style="margin:0; color:var(--green);">SEA Control Unit</h2>
+        <small id="hospitalIDDisplay">Hospital Code: sea-hospital-99</small>
+        <div id="hStatus" style="font-weight:bold; margin-top:4px;">Status: Online & Listening</div>
+      </div>
+      <button style="background:var(--green); border:none; padding:10px 18px; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
+    </div>
+
+    <div class="hospital-grid">
+      <div style="background:#0d0017; border:1px solid var(--light-purple); padding:15px; border-radius:12px; overflow-y:auto; max-height:450px;">
+        <h3 style="color:var(--green); margin-top:0;">Live Emergency Data</h3>
+        <div id="alertDetails"><p style="color:#888;">Waiting for SOS signals...</p></div>
+      </div>
+      <div id="map"></div>
+    </div>
   </div>
 
   <script>
-    let peer = null;
-    let conn = null;
-    let map = null;
-    let mapMarker = null;
-    let accuracyCircle = null;
-    let sirenInterval = null;
-    let audioCtx = null;
-    let oscillator = null;
+    // BroadcastChannel enables Instant Cross-Tab Communication without internet
+    const channel = new BroadcastChannel('sea_emergency_network');
+    let map = null, mapMarker = null, accuracyCircle = null;
+    let audioCtx = null, oscillator = null, sirenInterval = null;
 
-    function initMap() {
-      map = L.map('map').setView([20.5937, 78.9629], 5);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
+    // View Navigation
+    function showPortal() {
+      document.getElementById('portalView').style.display = 'block';
+      document.getElementById('patientCard').style.display = 'none';
+      document.getElementById('hospitalCard').style.display = 'none';
     }
 
-    function initPeer() {
-      if (peer) peer.destroy();
-      const channelId = document.getElementById('roomId').value.trim();
+    function openPatientView() {
+      document.getElementById('portalView').style.display = 'none';
+      document.getElementById('patientCard').style.display = 'block';
+    }
 
-      peer = new Peer(channelId, {
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478' }
-          ]
-        },
-        debug: 1
-      });
-      
-      peer.on('open', (id) => {
-        const label = document.getElementById('hospitalStatusLabel');
-        label.innerText = "Status: Online & Listening (ID: " + id + ")";
-        label.style.color = "var(--green)";
-      });
+    function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
+    function hideLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
-      peer.on('connection', (connection) => {
-        conn = connection;
-        conn.on('data', (data) => {
-          if (data.type === 'SOS_ALERT') {
-            receiveSOS(data);
-          }
-        });
-      });
+    function verifyLogin() {
+      const u = document.getElementById('loginUser').value.trim();
+      const p = document.getElementById('loginPass').value.trim();
 
-      peer.on('error', (err) => {
-        const label = document.getElementById('hospitalStatusLabel');
-        if (err.type === 'unavailable-id') {
-          label.innerText = "ID Taken! Change Hospital Code in box above.";
-          label.style.color = "var(--yellow)";
-        } else {
-          label.innerText = "Connecting to SEA Peer Server...";
-          label.style.color = "var(--yellow)";
+      // Requested Credentials: skim hospital / skim123
+      if (u === "skim hospital" && p === "skim123") {
+        hideLoginModal();
+        document.getElementById('portalView').style.display = 'none';
+        document.getElementById('hospitalCard').style.display = 'block';
+        initMap();
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+      }
+    }
+
+    // Patient Trigger
+    function triggerSOS() {
+      const status = document.getElementById('patientStatus');
+      status.innerText = "🚨 Transmitting Distress Signal & Acquiring GPS...";
+      status.style.color = "var(--yellow)";
+
+      const targetId = document.getElementById('hospitalIdInput').value.trim();
+
+      const sendData = (lat, lng, accuracy) => {
+        const payload = {
+          type: 'SOS_ALERT',
+          targetHospitalId: targetId,
+          name: document.getElementById('pName').value,
+          phone: document.getElementById('pPhone').value,
+          address: document.getElementById('pAddress').value,
+          blood: document.getElementById('pBlood').value,
+          ice: document.getElementById('pICE').value,
+          allergies: document.getElementById('pAllergies').value,
+          conditions: document.getElementById('pConditions').value,
+          lat: lat,
+          lng: lng,
+          accuracy: accuracy,
+          time: new Date().toLocaleTimeString()
+        };
+        
+        // Broadcast across all open tabs instantly
+        channel.postMessage(payload);
+        status.innerText = "🚨 SOS TRANSMITTED LIVE TO HOSPITAL!";
+        status.style.color = "var(--green)";
+      };
+
+      // Real GPS Tracking with Immediate Fallback
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => sendData(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+          (err) => sendData(null, null, null),
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        sendData(null, null, null);
+      }
+    }
+
+    // Hospital Dashboard Receiver
+    channel.onmessage = (event) => {
+      const data = event.data;
+      if (data.type === 'SOS_ALERT') {
+        const myHospitalId = "sea-hospital-99"; // Default hospital ID
+        
+        if (data.targetHospitalId === myHospitalId) {
+          receiveSOS(data);
         }
-      });
-    }
+      }
+    };
 
     function receiveSOS(data) {
       startSiren();
-
       document.getElementById('sirenHeader').classList.add('siren-active');
-      document.getElementById('hospitalStatusLabel').innerText = "🚨 SEA EMERGENCY DISTRESS SIGNAL RECEIVED!";
+      document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
 
-      let locationHTML = "";
-      if (data.lat && data.lng) {
-        const accuracyText = data.accuracy ? `±${Math.round(data.accuracy)} meters` : 'Standard';
-        locationHTML = `
-          <p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
-          <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">${accuracyText}</span></p>
-          <p><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:var(--green); font-weight:bold;">Open in Google Maps ↗</a></p>
-        `;
-        
-        const coords = [data.lat, data.lng];
-        map.setView(coords, 17);
-
-        if (mapMarker) map.removeLayer(mapMarker);
-        mapMarker = L.marker(coords).addTo(map)
-          .bindPopup(`<b>${data.name}</b><br>Blood Group: ${data.bloodGroup}<br>Phone: ${data.phone}`)
-          .openPopup();
-
-        if (accuracyCircle) map.removeLayer(accuracyCircle);
-        if (data.accuracy) {
-          accuracyCircle = L.circle(coords, {
-            radius: data.accuracy,
-            color: '#00e676',
-            fillColor: '#00e676',
-            fillOpacity: 0.15
-          }).addTo(map);
-        }
-      } else {
-        locationHTML = `<p style="color:var(--yellow);">⚠️ GPS Fix Pending... (Using manual address below)</p>`;
-      }
+      let locationText = data.lat ? 
+        `<p><strong>GPS:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)} (±${Math.round(data.accuracy)}m)</p>` : 
+        `<p style="color:var(--yellow);">⚠️ Standard GPS unavailable (Using manual address)</p>`;
 
       document.getElementById('alertDetails').innerHTML = `
         <p><strong>Time:</strong> ${data.time}</p>
         <p><strong>Name:</strong> ${data.name}</p>
         <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Blood Group:</strong> <span class="badge">${data.bloodGroup}</span></p>
-        <hr style="border-color: var(--light-purple);">
-        <p><strong>Manual Address:</strong><br><span style="color:#ffea00;">${data.manualAddress}</span></p>
-        <hr style="border-color: var(--light-purple);">
-        <p><strong>Known Allergies:</strong> ${data.allergies}</p>
-        <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
-        <p><strong>Emergency Contact:</strong> ${data.emergencyContact}</p>
-        <hr style="border-color: var(--light-purple);">
-        ${locationHTML}
+        <p><strong>Blood Group:</strong> <span class="badge">${data.blood}</span></p>
+        <hr style="border-color:var(--light-purple)">
+        <p><strong>Address:</strong> ${data.address}</p>
+        <p><strong>Allergies:</strong> ${data.allergies}</p>
+        <p><strong>Pre-existing:</strong> ${data.conditions}</p>
+        <p><strong>ICE Contact:</strong> ${data.ice}</p>
+        <hr style="border-color:var(--light-purple)">
+        ${locationText}
       `;
+
+      if (data.lat && map) {
+        const coords = [data.lat, data.lng];
+        map.setView(coords, 16);
+
+        if (mapMarker) map.removeLayer(mapMarker);
+        mapMarker = L.marker(coords).addTo(map).bindPopup(`<b>${data.name}</b>`).openPopup();
+
+        if (accuracyCircle) map.removeLayer(accuracyCircle);
+        if (data.accuracy) {
+          accuracyCircle = L.circle(coords, { radius: data.accuracy, color: '#00e676', fillColor: '#00e676', fillOpacity: 0.2 }).addTo(map);
+        }
+      }
     }
 
-    function stopSiren() {
-      if (oscillator) {
-        oscillator.stop();
-        oscillator = null;
-      }
-      document.getElementById('sirenHeader').classList.remove('siren-active');
-      document.getElementById('hospitalStatusLabel').innerText = "Status: SEA Alert Acknowledged";
-
-      if (conn && conn.open) {
-        conn.send({ type: 'ACKNOWLEDGED' });
+    function initMap() {
+      if (!map) {
+        map = L.map('map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
       }
     }
 
@@ -289,15 +397,14 @@
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       oscillator = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
 
-      let pitchToggle = false;
+      let toggle = false;
       sirenInterval = setInterval(() => {
-        if (!oscillator) { clearInterval(sirenInterval); return; }
-        oscillator.frequency.setValueAtTime(pitchToggle ? 600 : 900, audioCtx.currentTime);
-        pitchToggle = !pitchToggle;
+        if (!oscillator) return;
+        oscillator.frequency.setValueAtTime(toggle ? 600 : 900, audioCtx.currentTime);
+        toggle = !toggle;
       }, 400);
 
       oscillator.connect(gain);
@@ -305,10 +412,12 @@
       oscillator.start();
     }
 
-    window.onload = () => {
-      initMap();
-      initPeer();
-    };
+    function stopSiren() {
+      if (oscillator) { oscillator.stop(); oscillator = null; }
+      if (sirenInterval) clearInterval(sirenInterval);
+      document.getElementById('sirenHeader').classList.remove('siren-active');
+      document.getElementById('hStatus').innerText = "Status: Alert Acknowledged";
+    }
   </script>
 </body>
 </html>
