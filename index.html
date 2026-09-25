@@ -142,7 +142,7 @@
       <div class="header-title-box">
         <h2>SEA Dashboard</h2>
         <small>SOS-EMERGENCY-ATTENDANCE CONTROL UNIT</small>
-        <span id="hospitalStatusLabel" style="margin-top: 5px;">Status: Starting connection...</span>
+        <span id="hospitalStatusLabel" style="margin-top: 5px; display:block; font-weight:bold;">Status: Starting connection...</span>
       </div>
     </div>
     <button class="btn-stop" onclick="stopSiren()">STOP SIREN & ACKNOWLEDGE</button>
@@ -193,7 +193,9 @@
       });
       
       peer.on('open', (id) => {
-        document.getElementById('hospitalStatusLabel').innerText = "Status: Online & Listening (ID: " + id + ")";
+        const label = document.getElementById('hospitalStatusLabel');
+        label.innerText = "Status: Online & Listening (ID: " + id + ")";
+        label.style.color = "var(--green)";
       });
 
       peer.on('connection', (connection) => {
@@ -206,10 +208,13 @@
       });
 
       peer.on('error', (err) => {
+        const label = document.getElementById('hospitalStatusLabel');
         if (err.type === 'unavailable-id') {
-          document.getElementById('hospitalStatusLabel').innerText = "ID Taken! Change Hospital Code.";
+          label.innerText = "ID Taken! Change Hospital Code in box above.";
+          label.style.color = "var(--yellow)";
         } else {
-          document.getElementById('hospitalStatusLabel').innerText = "Error: " + err.type;
+          label.innerText = "Connecting to SEA Peer Server...";
+          label.style.color = "var(--yellow)";
         }
       });
     }
@@ -247,7 +252,7 @@
           }).addTo(map);
         }
       } else {
-        locationHTML = `<p style="color:var(--yellow);">⚠️ Acquiring live GPS satellite fix... (Relying on manual address)</p>`;
+        locationHTML = `<p style="color:var(--yellow);">⚠️ GPS Fix Pending... (Using manual address below)</p>`;
       }
 
       document.getElementById('alertDetails').innerHTML = `
@@ -272,7 +277,7 @@
         oscillator = null;
       }
       document.getElementById('sirenHeader').classList.remove('siren-active');
-      document.getElementById('hospitalStatusLabel').innerText = "Status: SEA Alert Acknowledged / Siren Stopped";
+      document.getElementById('hospitalStatusLabel').innerText = "Status: SEA Alert Acknowledged";
 
       if (conn && conn.open) {
         conn.send({ type: 'ACKNOWLEDGED' });
