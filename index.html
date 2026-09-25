@@ -96,7 +96,7 @@
     }
     .sos-btn:active { transform: scale(0.93); }
 
-    /* Login Modal */
+    /* Login / Register Modal */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -112,7 +112,7 @@
       border-radius: 16px;
       border: 2px solid var(--green);
       width: 90%;
-      max-width: 350px;
+      max-width: 380px;
       text-align: center;
     }
 
@@ -164,6 +164,14 @@
       display: block; width: 100%; padding: 10px; background: var(--red); color: white;
       text-align: center; text-decoration: none; font-weight: bold; border-radius: 8px; margin-bottom: 10px; border: 1px solid #fff;
     }
+    .toggle-link {
+      color: var(--green);
+      font-size: 0.85rem;
+      text-decoration: underline;
+      cursor: pointer;
+      display: inline-block;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
@@ -207,11 +215,6 @@
 
     <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
 
-    <div style="background:#1a002c; padding:8px; border-radius:8px; border:1px solid var(--light-purple); margin-bottom:10px; text-align:center;">
-      <small style="color:#aaa;">Hospital Target Code: </small>
-      <input type="text" id="hospitalIdInput" value="sea-hospital-99" style="width:auto; padding:3px 6px; text-align:center; font-weight:bold;">
-    </div>
-
     <button class="sos-btn" onclick="triggerSOS()">SOS</button>
 
     <div class="grid-2">
@@ -236,17 +239,27 @@
     <div id="patientStatus" class="status-box">System Ready</div>
   </div>
 
-  <!-- HOSPITAL LOGIN MODAL -->
+  <!-- HOSPITAL LOGIN & REGISTER MODAL -->
   <div id="loginModal" class="modal-overlay">
     <div class="login-card">
-      <h3 style="color:var(--green); margin-top:0;">Hospital Login</h3>
+      <h3 id="modalTitle" style="color:var(--green); margin-top:0;">Hospital Login</h3>
+      
+      <!-- Signup Field (Hidden in Login view) -->
+      <div id="signupFields" style="display:none;">
+        <input type="text" id="regHospName" placeholder="Hospital / Facility Name">
+      </div>
+
       <input type="text" id="loginUser" placeholder="Username">
       <input type="password" id="loginPass" placeholder="Password">
-      <p id="loginError" style="color:var(--red); font-size:0.85rem; display:none;">Invalid credentials!</p>
+      
+      <p id="authMsg" style="font-size:0.85rem; display:none; margin:5px 0;"></p>
+
       <div style="margin-top:15px; display:flex; gap:8px;">
-        <button style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="verifyLogin()">Login</button>
+        <button id="authSubmitBtn" style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="handleAuthSubmit()">Login</button>
         <button style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="switchView('patient')">Cancel</button>
       </div>
+
+      <span id="toggleAuthMode" class="toggle-link" onclick="toggleAuthMode()">Don't have an account? Register Hospital</span>
     </div>
   </div>
 
@@ -254,11 +267,14 @@
   <div id="hospitalCard" class="view-card wide" style="display:none;">
     <div class="hospital-header" id="sirenHeader">
       <div>
-        <h2 style="margin:0; color:var(--green);">SEA Control Unit</h2>
-        <small id="hospitalIDDisplay">Listening Code: sea-hospital-99</small>
+        <h2 id="activeHospitalName" style="margin:0; color:var(--green);">Hospital Control Unit</h2>
+        <small id="loggedInUserDisplay" style="color:#aaa;"></small>
         <div id="hStatus" style="font-weight:bold; margin-top:4px;">Status: Online & Listening</div>
       </div>
-      <button style="background:var(--green); border:none; padding:10px 18px; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button style="background:var(--green); border:none; padding:10px 18px; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
+        <button style="background:#444; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;" onclick="logoutHospital()">Logout</button>
+      </div>
     </div>
 
     <div class="hospital-grid">
@@ -272,10 +288,126 @@
 
   <script>
     const channel = new BroadcastChannel('sea_emergency_network');
-    let isAuthenticated = false;
+    let authenticatedUser = null; // Stores currently logged-in hospital account details
+    let isRegisterMode = false;
+
     let map = null, mapMarker = null, accuracyCircle = null;
     let audioCtx = null, oscillator = null, sirenInterval = null;
     let gpsWatchId = null;
+
+    // Helper: Retrieve registered hospital accounts list from LocalStorage
+    function getStoredAccounts() {
+      const accounts = localStorage.getItem('sea_hospital_accounts');
+      if (accounts) {
+        return JSON.parse(accounts);
+      }
+      // Initial default account
+      return [
+        { name: "Central General Hospital", user: "skim hospital", pass: "skim123" }
+      ];
+    }
+
+    // Helper: Save accounts to LocalStorage
+    function saveAccounts(accounts) {
+      localStorage.setItem('sea_hospital_accounts', JSON.stringify(accounts));
+    }
+
+    // Toggle between Login mode & Register mode
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      const modalTitle = document.getElementById('modalTitle');
+      const signupFields = document.getElementById('signupFields');
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const toggleLink = document.getElementById('toggleAuthMode');
+      const msg = document.getElementById('authMsg');
+
+      msg.style.display = 'none';
+
+      if (isRegisterMode) {
+        modalTitle.innerText = "Register Hospital";
+        signupFields.style.display = "block";
+        submitBtn.innerText = "Register & Login";
+        toggleLink.innerText = "Already registered? Log in here";
+      } else {
+        modalTitle.innerText = "Hospital Login";
+        signupFields.style.display = "none";
+        submitBtn.innerText = "Login";
+        toggleLink.innerText = "Don't have an account? Register Hospital";
+      }
+    }
+
+    // Handle Login or Registration
+    function handleAuthSubmit() {
+      const u = document.getElementById('loginUser').value.trim();
+      const p = document.getElementById('loginPass').value.trim();
+      const msg = document.getElementById('authMsg');
+
+      if (!u || !p) {
+        msg.innerText = "Please enter both username and password!";
+        msg.style.color = "var(--red)";
+        msg.style.display = "block";
+        return;
+      }
+
+      const accounts = getStoredAccounts();
+
+      if (isRegisterMode) {
+        const hName = document.getElementById('regHospName').value.trim();
+        if (!hName) {
+          msg.innerText = "Please enter your Hospital Name!";
+          msg.style.color = "var(--red)";
+          msg.style.display = "block";
+          return;
+        }
+
+        // Check if username is already taken
+        const existing = accounts.find(a => a.user.toLowerCase() === u.toLowerCase());
+        if (existing) {
+          msg.innerText = "Username already exists! Choose another.";
+          msg.style.color = "var(--red)";
+          msg.style.display = "block";
+          return;
+        }
+
+        // Register new hospital account
+        const newAcc = { name: hName, user: u, pass: p };
+        accounts.push(newAcc);
+        saveAccounts(accounts);
+
+        authenticatedUser = newAcc;
+        openDashboard();
+      } else {
+        // Authenticate existing user
+        const matched = accounts.find(a => a.user.toLowerCase() === u.toLowerCase() && a.pass === p);
+        if (matched) {
+          authenticatedUser = matched;
+          openDashboard();
+        } else {
+          msg.innerText = "Invalid credentials!";
+          msg.style.color = "var(--red)";
+          msg.style.display = "block";
+        }
+      }
+    }
+
+    function openDashboard() {
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('patientCard').style.display = 'none';
+      document.getElementById('hospitalCard').style.display = 'block';
+      document.getElementById('pillHospital').classList.add('active');
+      document.getElementById('pillPatient').classList.remove('active');
+
+      document.getElementById('activeHospitalName').innerText = authenticatedUser.name;
+      document.getElementById('loggedInUserDisplay').innerText = `Logged in as: ${authenticatedUser.user}`;
+      
+      initMap();
+    }
+
+    function logoutHospital() {
+      authenticatedUser = null;
+      stopSiren();
+      switchView('patient');
+    }
 
     // Switch Tabs via Pill
     function switchView(target) {
@@ -286,32 +418,11 @@
         document.getElementById('pillPatient').classList.add('active');
         document.getElementById('pillHospital').classList.remove('active');
       } else if (target === 'hospital') {
-        if (!isAuthenticated) {
+        if (!authenticatedUser) {
           document.getElementById('loginModal').style.display = 'flex';
         } else {
-          document.getElementById('patientCard').style.display = 'none';
-          document.getElementById('hospitalCard').style.display = 'block';
-          document.getElementById('pillHospital').classList.add('active');
-          document.getElementById('pillPatient').classList.remove('active');
-          initMap();
+          openDashboard();
         }
-      }
-    }
-
-    function verifyLogin() {
-      const u = document.getElementById('loginUser').value.trim();
-      const p = document.getElementById('loginPass').value.trim();
-
-      if (u === "skim hospital" && p === "skim123") {
-        isAuthenticated = true;
-        document.getElementById('loginModal').style.display = 'none';
-        document.getElementById('patientCard').style.display = 'none';
-        document.getElementById('hospitalCard').style.display = 'block';
-        document.getElementById('pillHospital').classList.add('active');
-        document.getElementById('pillPatient').classList.remove('active');
-        initMap();
-      } else {
-        document.getElementById('loginError').style.display = 'block';
       }
     }
 
@@ -321,9 +432,7 @@
       status.innerText = "🚨 Transmitting Distress Signal & Acquiring GPS...";
       status.style.color = "var(--yellow)";
 
-      const targetId = document.getElementById('hospitalIdInput').value.trim();
-
-      // Retrieve form values with fallback checks
+      // Retrieve form values with default fallback checks
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
       const phoneVal = document.getElementById('pPhone').value.trim() || "Not Provided";
       const addressVal = document.getElementById('pAddress').value.trim() || "Not Provided";
@@ -335,7 +444,6 @@
       const sendPayload = (lat, lng, accuracy) => {
         const payload = {
           type: 'SOS_ALERT',
-          targetHospitalId: targetId,
           name: nameVal,
           phone: phoneVal,
           address: addressVal,
@@ -353,7 +461,7 @@
         channel.postMessage(payload);
         localStorage.setItem('sea_last_sos_event', JSON.stringify(payload));
         
-        status.innerText = "🚨 DISTRESS TRANSMITTED LIVE TO HOSPITAL!";
+        status.innerText = "🚨 DISTRESS TRANSMITTED LIVE TO HOSPITALS!";
         status.style.color = "var(--green)";
       };
 
@@ -387,10 +495,7 @@
 
     function processEmergencySignal(data) {
       if (data && data.type === 'SOS_ALERT') {
-        const currentTargetCode = document.getElementById('hospitalIdInput').value.trim();
-        if (data.targetHospitalId === currentTargetCode) {
-          receiveSOS(data);
-        }
+        receiveSOS(data);
       }
     }
 
