@@ -172,6 +172,20 @@
       display: inline-block;
       margin-top: 12px;
     }
+
+    /* Footer Credits Styling */
+    .app-footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      color: #888;
+    }
+    .app-footer span {
+      color: var(--green);
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -233,6 +247,11 @@
     <textarea id="pConditions" rows="2" placeholder="Medical Conditions"></textarea>
 
     <div id="patientStatus" class="status-box">System Ready</div>
+
+    <!-- Patient Footer Credits -->
+    <div class="app-footer">
+      Developed by <span>Gangan R G and team SEA</span>
+    </div>
   </div>
 
   <!-- HOSPITAL LOGIN & REGISTER MODAL -->
@@ -279,19 +298,27 @@
       </div>
       <div id="map"></div>
     </div>
+
+    <!-- Hospital Footer Credits -->
+    <div class="app-footer">
+      Developed by <span>Gangan R G and team SEA</span>
+    </div>
   </div>
 
   <script>
     // Global shared channel ID for cross-device broadcasting
     const SHARED_CHANNEL = "sea_emergency_network_global_v1";
     
+    // Unique device session identifier to prevent self-triggering sirens
+    const MY_DEVICE_ID = "DEVICE_" + Math.random().toString(36).substr(2, 9);
+
     let authenticatedUser = null;
     let isRegisterMode = false;
     let map = null, mapMarker = null, accuracyCircle = null;
     let audioCtx = null, oscillator = null, sirenInterval = null;
     let gpsWatchId = null;
 
-    // Start Listening to Global Cross-Device SOS Broadcasts using EventSource
+    // Start Listening to Global Cross-Device SOS Broadcasts
     function connectCrossDeviceListener() {
       const eventSource = new EventSource(`https://ntfy.sh/${SHARED_CHANNEL}/sse`);
       eventSource.onmessage = (event) => {
@@ -299,7 +326,9 @@
           const payload = JSON.parse(event.data);
           if (payload && payload.message) {
             const data = JSON.parse(payload.message);
-            if (data.type === 'SOS_ALERT') {
+            
+            // Only process SOS and ONLY ring if on Hospital View and NOT sent by this device
+            if (data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
               receiveSOS(data);
             }
           }
@@ -309,7 +338,7 @@
       };
     }
 
-    // Call listener immediately on load
+    // Call listener on startup
     connectCrossDeviceListener();
 
     function getStoredAccounts() {
@@ -446,6 +475,7 @@
       const sendPayload = (lat, lng, accuracy) => {
         const payload = {
           type: 'SOS_ALERT',
+          senderId: MY_DEVICE_ID, // Include sender ID so this device ignores its own siren
           name: nameVal,
           phone: phoneVal,
           address: addressVal,
@@ -459,12 +489,12 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // HTTP POST to global relay
+        // HTTP POST to global network
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
           body: JSON.stringify(payload)
         }).then(() => {
-          status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED DEVICES!";
+          status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
           status.style.color = "var(--green)";
         }).catch(err => {
           status.innerText = "⚠️ Transmission Error. Retrying...";
@@ -485,39 +515,42 @@
     }
 
     function receiveSOS(data) {
-      startSiren();
-      document.getElementById('sirenHeader').classList.add('siren-active');
-      document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
+      // Only execute siren and map updates if the user is in Hospital View
+      if (document.getElementById('hospitalCard').style.display === 'block') {
+        startSiren();
+        document.getElementById('sirenHeader').classList.add('siren-active');
+        document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
 
-      let locationText = data.lat ? 
-        `<p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
-         <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">±${Math.round(data.accuracy)} meters</span></p>` : 
-        `<p style="color:var(--yellow);">⚠️ Acquiring precise GPS satellite fix... (Using manual address below)</p>`;
+        let locationText = data.lat ? 
+          `<p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
+           <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">±${Math.round(data.accuracy)} meters</span></p>` : 
+          `<p style="color:var(--yellow);">⚠️ Acquiring precise GPS satellite fix... (Using manual address below)</p>`;
 
-      document.getElementById('alertDetails').innerHTML = `
-        <p><strong>Time:</strong> ${data.time}</p>
-        <p><strong>Name:</strong> ${data.name}</p>
-        <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Blood Group:</strong> <span class="badge">${data.blood}</span></p>
-        <hr style="border-color:var(--light-purple)">
-        <p><strong>Address:</strong> ${data.address}</p>
-        <p><strong>Allergies:</strong> ${data.allergies}</p>
-        <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
-        <p><strong>ICE Contact:</strong> ${data.ice}</p>
-        <hr style="border-color:var(--light-purple)">
-        ${locationText}
-      `;
+        document.getElementById('alertDetails').innerHTML = `
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Name:</strong> ${data.name}</p>
+          <p><strong>Phone:</strong> ${data.phone}</p>
+          <p><strong>Blood Group:</strong> <span class="badge">${data.blood}</span></p>
+          <hr style="border-color:var(--light-purple)">
+          <p><strong>Address:</strong> ${data.address}</p>
+          <p><strong>Allergies:</strong> ${data.allergies}</p>
+          <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
+          <p><strong>ICE Contact:</strong> ${data.ice}</p>
+          <hr style="border-color:var(--light-purple)">
+          ${locationText}
+        `;
 
-      if (data.lat && map) {
-        const coords = [data.lat, data.lng];
-        map.setView(coords, 16);
+        if (data.lat && map) {
+          const coords = [data.lat, data.lng];
+          map.setView(coords, 16);
 
-        if (mapMarker) map.removeLayer(mapMarker);
-        mapMarker = L.marker(coords).addTo(map).bindPopup(`<b>${data.name}</b>`).openPopup();
+          if (mapMarker) map.removeLayer(mapMarker);
+          mapMarker = L.marker(coords).addTo(map).bindPopup(`<b>${data.name}</b>`).openPopup();
 
-        if (accuracyCircle) map.removeLayer(accuracyCircle);
-        if (data.accuracy) {
-          accuracyCircle = L.circle(coords, { radius: data.accuracy, color: '#00e676', fillColor: '#00e676', fillOpacity: 0.2 }).addTo(map);
+          if (accuracyCircle) map.removeLayer(accuracyCircle);
+          if (data.accuracy) {
+            accuracyCircle = L.circle(coords, { radius: data.accuracy, color: '#00e676', fillColor: '#00e676', fillOpacity: 0.2 }).addTo(map);
+          }
         }
       }
     }
@@ -529,29 +562,47 @@
       }
     }
 
+    // Audio Engine
     function startSiren() {
-      if (oscillator) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      oscillator = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+      if (oscillator) return; // Siren is already playing
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
 
-      let toggle = false;
-      sirenInterval = setInterval(() => {
-        if (!oscillator) return;
-        oscillator.frequency.setValueAtTime(toggle ? 600 : 900, audioCtx.currentTime);
-        toggle = !toggle;
-      }, 400);
+        let toggle = false;
+        sirenInterval = setInterval(() => {
+          if (oscillator && audioCtx && audioCtx.state === 'running') {
+            oscillator.frequency.setValueAtTime(toggle ? 600 : 900, audioCtx.currentTime);
+            toggle = !toggle;
+          }
+        }, 400);
 
-      oscillator.connect(gain);
-      gain.connect(audioCtx.destination);
-      oscillator.start();
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start();
+      } catch(e) {
+        console.log("Audio block", e);
+      }
     }
 
     function stopSiren() {
-      if (oscillator) { oscillator.stop(); oscillator = null; }
-      if (sirenInterval) clearInterval(sirenInterval);
+      // Complete teardown of audio context and intervals
+      if (sirenInterval) {
+        clearInterval(sirenInterval);
+        sirenInterval = null;
+      }
+      if (oscillator) {
+        try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
+        oscillator = null;
+      }
+      if (audioCtx) {
+        try { audioCtx.close(); } catch(e){}
+        audioCtx = null;
+      }
+      
       document.getElementById('sirenHeader').classList.remove('siren-active');
       document.getElementById('hStatus').innerText = "Status: Alert Acknowledged";
     }
