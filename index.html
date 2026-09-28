@@ -103,6 +103,32 @@
     }
     .sos-btn:active { transform: scale(0.93); }
 
+    /* Emergency Mode Selection Box */
+    .sos-mode-selector {
+      background: #1a002c;
+      border: 1px solid var(--light-purple);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 10px 0 15px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .sos-mode-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #ddd;
+    }
+    .sos-mode-option input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+
     /* Modal UI */
     .modal-overlay {
       display: none;
@@ -232,7 +258,17 @@
 
     <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
 
-    <button class="sos-btn" onclick="confirmAndTriggerSOS()">SOS</button>
+    <button class="sos-btn" onclick="triggerSOS()">SOS</button>
+
+    <!-- SOS Trigger Target Options -->
+    <div class="sos-mode-selector">
+      <label class="sos-mode-option">
+        <input type="radio" name="sosTarget" value="hospital" checked> 🏥 Alert Hospital Only
+      </label>
+      <label class="sos-mode-option">
+        <input type="radio" name="sosTarget" value="both"> 🚨 Both (Alert & Call 112)
+      </label>
+    </div>
 
     <div class="grid-2">
       <input type="text" id="pName" placeholder="Full Name">
@@ -258,25 +294,6 @@
     <!-- Patient Footer Credits -->
     <div class="app-footer">
       Developed by <span>Gangan R G and team SEA</span>
-    </div>
-  </div>
-
-  <!-- SOS CONFIRMATION & DIALOG MODAL -->
-  <div id="sosModal" class="modal-overlay">
-    <div class="login-card" style="border-color: var(--red);">
-      <h2 style="color: var(--red); margin-top: 0;">🚨 CONFIRM SOS DISPATCH 🚨</h2>
-      <p style="font-size: 0.95rem; margin: 15px 0; color: #ddd; line-height: 1.4;">
-        Triggering SOS will broadcast your GPS location & medical details to emergency services and attempt to place a call to <strong>112</strong> simultaneously.
-      </p>
-      
-      <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-        <button style="width: 100%; padding: 12px; background: var(--red); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;" onclick="executeSOSAction()">
-          DISPATCH SOS & CALL 112 NOW
-        </button>
-        <button style="width: 100%; padding: 10px; background: #444; color: white; border: none; border-radius: 8px; cursor: pointer;" onclick="closeSOSModal()">
-          Cancel
-        </button>
-      </div>
     </div>
   </div>
 
@@ -342,10 +359,11 @@
     let gpsWatchId = null;
     let lastProcessedMsgId = null;
 
+    // Fast polling (2s interval for responsive speed)
     function startPollingListener() {
       setInterval(async () => {
         try {
-          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=30s`);
+          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=10s`);
           if (!response.ok) return;
           
           const text = await response.text();
@@ -364,7 +382,7 @@
             }
           }
         } catch (e) {}
-      }, 3000);
+      }, 2000);
     }
 
     startPollingListener();
@@ -486,25 +504,13 @@
       }
     }
 
-    /* SOS Dialog Box Handling */
-    function confirmAndTriggerSOS() {
-      document.getElementById('sosModal').style.display = 'flex';
-    }
-
-    function closeSOSModal() {
-      document.getElementById('sosModal').style.display = 'none';
-    }
-
-    function executeSOSAction() {
-      closeSOSModal();
-      triggerSOS();
-      window.location.href = "tel:112";
-    }
-
+    /* Fast Direct SOS Execution */
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal to Network...";
+      status.innerText = "🚨 Transmitting Distress Signal...";
       status.style.color = "var(--yellow)";
+
+      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
 
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
       const phoneVal = document.getElementById('pPhone').value.trim() || "Not Provided";
@@ -531,26 +537,34 @@
           time: new Date().toLocaleTimeString()
         };
         
+        // Immediate network dispatch
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
           body: JSON.stringify(payload)
         }).then(() => {
-          status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
+          status.innerText = "🚨 DISTRESS SIGNAL SENT TO HOSPITAL!";
           status.style.color = "var(--green)";
         }).catch(err => {
           status.innerText = "⚠️ Transmission Error. Retrying...";
         });
       };
 
+      // 1. Send data immediately without waiting for GPS response
       sendPayload(null, null, null);
 
+      // 2. Dial 112 if "Both" radio option is selected
+      if (selectedTarget === 'both') {
+        window.location.href = "tel:112";
+      }
+
+      // 3. Acquire location in background and push location update
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
 
         gpsWatchId = navigator.geolocation.watchPosition(
           (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
           (err) => console.log("GPS unavailable"),
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       }
     }
