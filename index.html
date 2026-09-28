@@ -349,43 +349,44 @@
   </div>
 
   <script>
-    // Global shared channel ID for cross-device broadcasting
-    const SHARED_CHANNEL = "sea_emergency_network_global_v1";
+    // Unique dedicated channel name to avoid collisions across network
+    const SHARED_CHANNEL = "sea_emergency_channel_prod_99";
     
-    // Unique device session identifier to prevent self-triggering sirens
-    const MY_DEVICE_ID = "DEVICE_" + Math.random().toString(36).substr(2, 9);
+    // Unique device identifier
+    const MY_DEVICE_ID = "DEV_" + Math.random().toString(36).substr(2, 9);
 
     let authenticatedUser = null;
     let isRegisterMode = false;
     let map = null, mapMarker = null, accuracyCircle = null;
     let audioCtx = null, oscillator = null, sirenInterval = null;
     let gpsWatchId = null;
-    let lastProcessedMsgId = null;
+    let processedMessageIds = new Set();
 
-    // Fast Polling Listener
+    // Fast Polling Listener (2-second interval)
     function startPollingListener() {
       setInterval(async () => {
         try {
-          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=30s`);
-          if (!response.ok) return;
+          const res = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=30s`);
+          if (!res.ok) return;
           
-          const text = await response.text();
-          const lines = text.trim().split('\n');
+          const rawText = await res.text();
+          const lines = rawText.trim().split('\n');
           
           for (let line of lines) {
             if (!line) continue;
-            const item = JSON.parse(line);
-            
-            if (item && item.id !== lastProcessedMsgId && item.message) {
-              const data = JSON.parse(item.message);
-              if (data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
-                lastProcessedMsgId = item.id;
-                receiveSOS(data);
+            try {
+              const item = JSON.parse(line);
+              if (item && item.id && !processedMessageIds.has(item.id) && item.message) {
+                const data = JSON.parse(item.message);
+                if (data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
+                  processedMessageIds.add(item.id);
+                  receiveSOS(data);
+                }
               }
-            }
+            } catch(e) {}
           }
         } catch (e) {}
-      }, 3000);
+      }, 2000);
     }
 
     startPollingListener();
@@ -507,7 +508,7 @@
       }
     }
 
-    // Send SOS to other devices worldwide
+    // Trigger SOS Signal Across All Devices
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
       status.innerText = "🚨 Transmitting Distress Signal to Network...";
@@ -539,9 +540,11 @@
           accuracy: accuracy,
           time: new Date().toLocaleTimeString()
         };
-        
+
+        // Header added to prevent CORS blocking across mobile/PC devices
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
         }).then(() => {
           status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
@@ -615,7 +618,7 @@
       }
     }
 
-    // Audio Engine
+    // Audio Siren Engine
     function startSiren() {
       if (oscillator) return;
       try {
