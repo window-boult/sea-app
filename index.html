@@ -103,7 +103,7 @@
     }
     .sos-btn:active { transform: scale(0.93); }
 
-    /* Emergency Mode Selection Box */
+    /* Mode Selection Box */
     .sos-mode-selector {
       background: #1a002c;
       border: 1px solid var(--light-purple);
@@ -260,7 +260,7 @@
 
     <button class="sos-btn" onclick="triggerSOS()">SOS</button>
 
-    <!-- SOS Trigger Target Options -->
+    <!-- SOS Target Options -->
     <div class="sos-mode-selector">
       <label class="sos-mode-option">
         <input type="radio" name="sosTarget" value="hospital" checked> 🏥 Alert Hospital Only
@@ -359,11 +359,10 @@
     let gpsWatchId = null;
     let lastProcessedMsgId = null;
 
-    // Fast polling (2s interval for responsive speed)
     function startPollingListener() {
       setInterval(async () => {
         try {
-          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=10s`);
+          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=15s`);
           if (!response.ok) return;
           
           const text = await response.text();
@@ -382,7 +381,7 @@
             }
           }
         } catch (e) {}
-      }, 2000);
+      }, 2500);
     }
 
     startPollingListener();
@@ -504,7 +503,7 @@
       }
     }
 
-    /* Fast Direct SOS Execution */
+    /* Reliable Direct SOS Trigger */
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
       status.innerText = "🚨 Transmitting Distress Signal...";
@@ -537,27 +536,29 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // Immediate network dispatch
+        // Optimized fetch request preventing CORS blocks
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+          mode: 'cors'
         }).then(() => {
-          status.innerText = "🚨 DISTRESS SIGNAL SENT TO HOSPITAL!";
+          status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
           status.style.color = "var(--green)";
         }).catch(err => {
           status.innerText = "⚠️ Transmission Error. Retrying...";
         });
       };
 
-      // 1. Send data immediately without waiting for GPS response
+      // 1. Send data immediately without GPS block
       sendPayload(null, null, null);
 
-      // 2. Dial 112 if "Both" radio option is selected
+      // 2. Dial 112 if "Both" is selected
       if (selectedTarget === 'both') {
         window.location.href = "tel:112";
       }
 
-      // 3. Acquire location in background and push location update
+      // 3. Update location as GPS resolves
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
 
