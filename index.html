@@ -315,11 +315,11 @@
     let authenticatedUser = null;
     let isRegisterMode = false;
     let map = null, mapMarker = null, accuracyCircle = null;
-    let audioCtx = null, oscillator = null, sirenInterval = null;
+    let audioCtx = null, oscillator = null, gainNode = null, sirenInterval = null;
     let gpsWatchId = null;
     let lastProcessedMsgId = null;
 
-    // Fast Polling Listener (Replaces EventSource to fix infinite loading issues)
+    // Fast Polling Listener
     function startPollingListener() {
       setInterval(async () => {
         try {
@@ -342,12 +342,11 @@
             }
           }
         } catch (e) {
-          // Silent catch for smooth background polling
+          // Silent catch for continuous monitoring
         }
       }, 3000);
     }
 
-    // Start listener immediately
     startPollingListener();
 
     function getStoredAccounts() {
@@ -467,7 +466,7 @@
       }
     }
 
-    // Send SOS to other devices worldwide
+    // Send SOS
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
       status.innerText = "🚨 Transmitting Distress Signal to Network...";
@@ -498,7 +497,6 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // HTTP POST to global network
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
           body: JSON.stringify(payload)
@@ -570,15 +568,17 @@
       }
     }
 
-    // Audio Engine
+    // Bulletproof Audio Siren Engine
     function startSiren() {
       if (oscillator) return;
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         oscillator = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        gainNode = audioCtx.createGain();
+        
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
 
         let toggle = false;
         sirenInterval = setInterval(() => {
@@ -588,25 +588,41 @@
           }
         }, 400);
 
-        oscillator.connect(gain);
-        gain.connect(audioCtx.destination);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
         oscillator.start();
       } catch(e) {
-        console.log("Audio block", e);
+        console.log("Audio permission pending", e);
       }
     }
 
     function stopSiren() {
+      // 1. Clear alternating interval
       if (sirenInterval) {
         clearInterval(sirenInterval);
         sirenInterval = null;
       }
+
+      // 2. Mute gain immediately
+      if (gainNode && audioCtx) {
+        try { gainNode.gain.setValueAtTime(0, audioCtx.currentTime); } catch(e){}
+      }
+
+      // 3. Stop oscillator cleanly
       if (oscillator) {
-        try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
+        try { 
+          oscillator.stop(); 
+          oscillator.disconnect(); 
+        } catch(e){}
         oscillator = null;
       }
+
+      // 4. Close Audio Context
       if (audioCtx) {
-        try { audioCtx.close(); } catch(e){}
+        try { 
+          audioCtx.suspend();
+          audioCtx.close(); 
+        } catch(e){}
         audioCtx = null;
       }
       
