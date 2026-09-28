@@ -50,6 +50,7 @@
       margin-bottom: 15px;
     }
 
+    /* Fixed logo size rendering for PC browsers */
     .app-logo {
       width: 80px;
       height: 80px;
@@ -320,7 +321,6 @@
 </div>
 
 <script>
-  // UNIQUE DEVICE IDENTIFIER (Prevents tab loopbacks)
   const MY_DEVICE_ID = 'DEVICE_' + Math.random().toString(36).substring(2, 11);
   const RELAY_URL = 'https://ntfy.sh/sea_emergency_network_global_v1';
 
@@ -400,7 +400,6 @@
     .catch(() => alert("Relay error. Check internet connection."));
   }
 
-  // HOSPITAL DASHBOARD POLLING ENGINE
   setInterval(() => {
     fetch(RELAY_URL + '/json?poll=1&since=30s')
       .then(res => res.text())
