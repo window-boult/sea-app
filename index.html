@@ -62,13 +62,13 @@
 
     /* App Header */
     .app-header { text-align: center; margin-bottom: 10px; }
-    .app-logo {
-      width: 80px;
-      height: 80px;
+    .app-logo { 
+      width: 80px; 
+      height: 80px; 
       min-width: 80px;
       min-height: 80px;
-      margin: 0 auto 5px auto;
-      display: block;
+      margin: 0 auto 5px auto; 
+      display: block; 
     }
     .app-title { color: var(--green); margin: 0; font-size: 1.6rem; font-weight: 900; }
     .app-subtitle { color: #aaa; margin: 2px 0 15px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
@@ -103,7 +103,7 @@
     }
     .sos-btn:active { transform: scale(0.93); }
 
-    /* Mode Selection Box */
+    /* Target Selector Styling */
     .sos-mode-selector {
       background: #1a002c;
       border: 1px solid var(--light-purple);
@@ -349,7 +349,10 @@
   </div>
 
   <script>
+    // Global shared channel ID for cross-device broadcasting
     const SHARED_CHANNEL = "sea_emergency_network_global_v1";
+    
+    // Unique device session identifier to prevent self-triggering sirens
     const MY_DEVICE_ID = "DEVICE_" + Math.random().toString(36).substr(2, 9);
 
     let authenticatedUser = null;
@@ -359,10 +362,11 @@
     let gpsWatchId = null;
     let lastProcessedMsgId = null;
 
+    // Fast Polling Listener
     function startPollingListener() {
       setInterval(async () => {
         try {
-          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=15s`);
+          const response = await fetch(`https://ntfy.sh/${SHARED_CHANNEL}/json?poll=1&since=30s`);
           if (!response.ok) return;
           
           const text = await response.text();
@@ -381,7 +385,7 @@
             }
           }
         } catch (e) {}
-      }, 2500);
+      }, 3000);
     }
 
     startPollingListener();
@@ -503,10 +507,10 @@
       }
     }
 
-    /* Reliable Direct SOS Trigger */
+    // Send SOS to other devices worldwide
     function triggerSOS() {
       const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal...";
+      status.innerText = "🚨 Transmitting Distress Signal to Network...";
       status.style.color = "var(--yellow)";
 
       const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
@@ -536,12 +540,10 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // Optimized fetch request preventing CORS blocks
+        // HTTP POST to global network using original reliable code
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload),
-          mode: 'cors'
+          body: JSON.stringify(payload)
         }).then(() => {
           status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
           status.style.color = "var(--green)";
@@ -550,22 +552,22 @@
         });
       };
 
-      // 1. Send data immediately without GPS block
+      // 1. Send data immediately using original working network routine
       sendPayload(null, null, null);
 
-      // 2. Dial 112 if "Both" is selected
+      // 2. Dial 112 if "Both" is checked
       if (selectedTarget === 'both') {
         window.location.href = "tel:112";
       }
 
-      // 3. Update location as GPS resolves
+      // 3. Update with GPS data
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
 
         gpsWatchId = navigator.geolocation.watchPosition(
           (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
           (err) => console.log("GPS unavailable"),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       }
     }
@@ -617,6 +619,7 @@
       }
     }
 
+    // Audio Engine
     function startSiren() {
       if (oscillator) return;
       try {
