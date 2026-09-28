@@ -62,7 +62,14 @@
 
     /* App Header */
     .app-header { text-align: center; margin-bottom: 10px; }
-    .app-logo { width: 80px; height: 80px; margin: 0 auto 5px auto; display: block; }
+    .app-logo { 
+      width: 80px; 
+      height: 80px; 
+      min-width: 80px;
+      min-height: 80px;
+      margin: 0 auto 5px auto; 
+      display: block; 
+    }
     .app-title { color: var(--green); margin: 0; font-size: 1.6rem; font-weight: 900; }
     .app-subtitle { color: #aaa; margin: 2px 0 15px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
 
@@ -95,6 +102,32 @@
       transition: transform 0.1s;
     }
     .sos-btn:active { transform: scale(0.93); }
+
+    /* Target Selector Styling */
+    .sos-mode-selector {
+      background: #1a002c;
+      border: 1px solid var(--light-purple);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 10px 0 15px 0;
+      display: flex;
+      justify-style: space-around;
+      align-items: center;
+    }
+    .sos-mode-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #ddd;
+    }
+    .sos-mode-option input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
 
     /* Modal UI */
     .modal-overlay {
@@ -199,7 +232,7 @@
   <!-- PATIENT PORTAL -->
   <div id="patientCard" class="view-card">
     <div class="app-header">
-      <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+      <svg class="app-logo" width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
         <defs>
           <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stop-color="#3a005f"/>
@@ -226,6 +259,16 @@
     <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
 
     <button class="sos-btn" onclick="triggerSOS()">SOS</button>
+
+    <!-- SOS Target Options -->
+    <div class="sos-mode-selector">
+      <label class="sos-mode-option">
+        <input type="radio" name="sosTarget" value="hospital" checked> 🏥 Alert Hospital Only
+      </label>
+      <label class="sos-mode-option">
+        <input type="radio" name="sosTarget" value="both"> 🚨 Both (Alert & Call 112)
+      </label>
+    </div>
 
     <div class="grid-2">
       <input type="text" id="pName" placeholder="Full Name">
@@ -319,7 +362,7 @@
     let gpsWatchId = null;
     let lastProcessedMsgId = null;
 
-    // Fast Polling Listener (Replaces EventSource to fix infinite loading issues)
+    // Fast Polling Listener
     function startPollingListener() {
       setInterval(async () => {
         try {
@@ -341,13 +384,10 @@
               }
             }
           }
-        } catch (e) {
-          // Silent catch for smooth background polling
-        }
+        } catch (e) {}
       }, 3000);
     }
 
-    // Start listener immediately
     startPollingListener();
 
     function getStoredAccounts() {
@@ -473,6 +513,8 @@
       status.innerText = "🚨 Transmitting Distress Signal to Network...";
       status.style.color = "var(--yellow)";
 
+      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
+
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
       const phoneVal = document.getElementById('pPhone').value.trim() || "Not Provided";
       const addressVal = document.getElementById('pAddress').value.trim() || "Not Provided";
@@ -498,7 +540,6 @@
           time: new Date().toLocaleTimeString()
         };
         
-        // HTTP POST to global network
         fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
           method: 'POST',
           body: JSON.stringify(payload)
@@ -511,6 +552,10 @@
       };
 
       sendPayload(null, null, null);
+
+      if (selectedTarget === 'both') {
+        window.location.href = "tel:112";
+      }
 
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
