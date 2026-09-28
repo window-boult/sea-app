@@ -359,8 +359,9 @@
     let isRegisterMode = false;
     let map = null, mapMarker = null, accuracyCircle = null;
     let audioCtx = null, oscillator = null, sirenInterval = null;
-    let gpsWatchId = null;
+    let gpsWatchId = null, locationFallbackInterval = null;
     let processedMessageIds = new Set();
+    let latestCoords = { lat: null, lng: null, accuracy: null };
 
     // Fast Polling Listener (2-second interval)
     function startPollingListener() {
@@ -508,14 +509,9 @@
       }
     }
 
-    // Trigger SOS Signal Across All Devices
-    function triggerSOS() {
+    // Broadcast emergency payload
+    function sendSOSPayload(lat, lng, accuracy) {
       const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal to Network...";
-      status.style.color = "var(--yellow)";
-
-      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
-
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
       const phoneVal = document.getElementById('pPhone').value.trim() || "Not Provided";
       const addressVal = document.getElementById('pAddress').value.trim() || "Not Provided";
@@ -524,50 +520,86 @@
       const allergiesVal = document.getElementById('pAllergies').value.trim() || "None Listed";
       const conditionsVal = document.getElementById('pConditions').value.trim() || "None Listed";
 
-      const sendPayload = (lat, lng, accuracy) => {
-        const payload = {
-          type: 'SOS_ALERT',
-          senderId: MY_DEVICE_ID,
-          name: nameVal,
-          phone: phoneVal,
-          address: addressVal,
-          blood: bloodVal,
-          ice: iceVal,
-          allergies: allergiesVal,
-          conditions: conditionsVal,
-          lat: lat,
-          lng: lng,
-          accuracy: accuracy,
-          time: new Date().toLocaleTimeString()
-        };
-
-        // Header added to prevent CORS blocking across mobile/PC devices
-        fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        }).then(() => {
-          status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
-          status.style.color = "var(--green)";
-        }).catch(err => {
-          status.innerText = "⚠️ Transmission Error. Retrying...";
-        });
+      const payload = {
+        type: 'SOS_ALERT',
+        senderId: MY_DEVICE_ID,
+        name: nameVal,
+        phone: phoneVal,
+        address: addressVal,
+        blood: bloodVal,
+        ice: iceVal,
+        allergies: allergiesVal,
+        conditions: conditionsVal,
+        lat: lat,
+        lng: lng,
+        accuracy: accuracy,
+        time: new Date().toLocaleTimeString()
       };
 
-      sendPayload(null, null, null);
+      fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
+        status.style.color = "var(--green)";
+      }).catch(err => {
+        status.innerText = "⚠️ Transmission Error. Retrying...";
+      });
+    }
+
+    // Trigger SOS Signal Across All Devices
+    function triggerSOS() {
+      const status = document.getElementById('patientStatus');
+      status.innerText = "🚨 Transmitting Distress Signal to Network...";
+      status.style.color = "var(--yellow)";
+
+      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
+
+      // Immediate payload transmission
+      sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
 
       if (selectedTarget === 'both') {
         window.location.href = "tel:112";
       }
 
+      // Continuous position polling engine
       if ("geolocation" in navigator) {
         if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+        if (locationFallbackInterval) clearInterval(locationFallbackInterval);
 
+        // High accuracy attempt
         gpsWatchId = navigator.geolocation.watchPosition(
-          (pos) => sendPayload(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
-          (err) => console.log("GPS unavailable"),
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          (pos) => {
+            latestCoords = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            };
+            sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+          },
+          (err) => {
+            // Fallback coarse location request if high accuracy fails
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                latestCoords = {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy
+                };
+                sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+              },
+              null,
+              { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            );
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
+
+        // Ensure continuous transmission loop every 3 seconds
+        locationFallbackInterval = setInterval(() => {
+          sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+        }, 3000);
       }
     }
 
