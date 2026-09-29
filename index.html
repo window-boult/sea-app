@@ -1,238 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEA System - SOS Emergency Attendance</title>
-  <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEA - SOS Emergency Attendance System</title>
   
-  <!-- Leaflet Map CSS & JS -->
+  <!-- Manifest for Progressive Web App -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Leaflet CSS for Mapping -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root {
       --purple: #1a002c;
+      --card-bg: #270041;
       --light-purple: #3a005f;
       --green: #00e676;
-      --red: #ff1744;
       --yellow: #ffea00;
+      --red: #ff1744;
+      --white: #ffffff;
+      --gray: #b0b0b0;
     }
 
-    * { box-sizing: border-box; }
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 15px;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--purple);
-      color: #fff;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--purple);
+      color: var(--white);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-    }
-
-    /* Top Navigation */
-    .nav-pill-container {
-      background: #0d0017;
-      border: 1px solid var(--light-purple);
-      padding: 4px;
-      border-radius: 30px;
-      display: flex;
-      gap: 5px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-    .nav-pill {
-      padding: 8px 18px;
-      border-radius: 20px;
-      border: none;
-      background: transparent;
-      color: #aaa;
-      font-weight: bold;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-    }
-    .nav-pill.active {
-      background: var(--light-purple);
-      color: var(--green);
-      box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
-    }
-
-    /* App Header */
-    .app-header { text-align: center; margin-bottom: 10px; }
-    .app-logo { 
-      width: 80px; 
-      height: 80px; 
-      min-width: 80px;
-      min-height: 80px;
-      margin: 0 auto 5px auto; 
-      display: block; 
-    }
-    .app-title { color: var(--green); margin: 0; font-size: 1.6rem; font-weight: 900; }
-    .app-subtitle { color: #aaa; margin: 2px 0 15px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-
-    /* Common Card Container */
-    .view-card {
-      width: 100%;
-      max-width: 450px;
-      background: #0d0017;
       padding: 20px;
-      border-radius: 20px;
-      border: 2px solid var(--light-purple);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-    .view-card.wide { max-width: 1000px; }
 
-    /* SOS Button */
-    .sos-btn {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      border: 5px solid #fff;
-      background: radial-gradient(circle, #ff5252 0%, var(--red) 100%);
-      color: white;
-      font-weight: 900;
-      font-size: 2.4rem;
-      cursor: pointer;
-      box-shadow: 0 0 30px var(--red);
-      margin: 15px auto;
-      display: block;
-      transition: transform 0.1s;
-    }
-    .sos-btn:active { transform: scale(0.93); }
-
-    /* Target Selector Styling */
-    .sos-mode-selector {
-      background: #1a002c;
-      border: 1px solid var(--light-purple);
-      border-radius: 12px;
-      padding: 10px;
-      margin: 10px 0 15px 0;
+    .app-header {
+      width: 100%;
+      max-width: 600px;
       display: flex;
-      justify-style: space-around;
       align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
     }
-    .sos-mode-option {
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .app-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--green);
+    }
+
+    .view-pills {
+      display: flex;
+      background: var(--light-purple);
+      padding: 4px;
+      border-radius: 20px;
+    }
+
+    .pill-btn {
+      background: none;
+      border: none;
+      color: var(--white);
+      padding: 8px 16px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn.active {
+      background: var(--green);
+      color: #000;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid var(--light-purple);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+      color: var(--white);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--light-purple);
+      background: #150024;
+      color: var(--white);
+      font-size: 0.95rem;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid var(--green);
+    }
+
+    .sos-radio-group {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .sos-radio-label {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      color: #ddd;
-    }
-    .sos-mode-option input {
-      width: auto;
-      margin: 0;
-      accent-color: var(--green);
-      cursor: pointer;
-    }
-
-    /* Modal UI */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-    .login-card {
-      background: #0d0017;
-      padding: 25px;
-      border-radius: 16px;
-      border: 2px solid var(--green);
-      width: 90%;
-      max-width: 380px;
-      text-align: center;
-    }
-
-    /* Hospital UI */
-    .hospital-header {
-      background: var(--light-purple);
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px solid var(--green);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .siren-active { animation: flashSiren 0.5s infinite alternate; }
-    @keyframes flashSiren {
-      0% { background-color: var(--light-purple); box-shadow: 0 0 10px var(--green); }
-      100% { background-color: #990000; box-shadow: 0 0 40px var(--red); }
-    }
-
-    .hospital-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
-    }
-    @media (min-width: 768px) {
-      .hospital-grid { grid-template-columns: 320px 1fr; }
-    }
-
-    #map { height: 400px; border-radius: 12px; border: 2px solid var(--green); }
-
-    /* Forms */
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 8px;
-      border: 1px solid var(--light-purple);
-      background: #1a002c;
-      color: white;
       font-size: 0.9rem;
+      cursor: pointer;
     }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .badge { background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
-    .status-box { text-align: center; font-weight: bold; margin-top: 10px; font-size: 0.95rem; color: var(--yellow); }
-    .call-112-btn {
-      display: block; width: 100%; padding: 10px; background: var(--red); color: white;
-      text-align: center; text-decoration: none; font-weight: bold; border-radius: 8px; margin-bottom: 10px; border: 1px solid #fff;
+
+    .sos-btn-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
     }
+
+    .sos-btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ff5252 0%, #b20000 100%);
+      color: var(--white);
+      border: 6px solid #ffffff;
+      font-size: 2rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+
+    .sos-btn:active {
+      transform: scale(0.94);
+      box-shadow: 0 0 15px rgba(255, 23, 68, 0.5);
+    }
+
+    .status-msg {
+      text-align: center;
+      font-weight: 700;
+      margin-top: 10px;
+      font-size: 0.95rem;
+      min-height: 24px;
+    }
+
+    /* Hospital Siren Banner */
+    .siren-header {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--light-purple);
+      text-align: center;
+      margin-bottom: 16px;
+      transition: background 0.3s ease;
+    }
+
+    .siren-header.siren-active {
+      background: var(--red);
+      animation: flash 0.8s infinite alternate;
+    }
+
+    @keyframes flash {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+
+    .ack-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--yellow);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    #map {
+      width: 100%;
+      height: 250px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      background: var(--red);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    /* Modal Styling for Auth */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      width: 90%;
+      max-width: 400px;
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid var(--light-purple);
+    }
+
     .toggle-link {
       color: var(--green);
       font-size: 0.85rem;
-      text-decoration: underline;
       cursor: pointer;
-      display: inline-block;
+      text-align: center;
       margin-top: 12px;
+      display: block;
+      text-decoration: underline;
     }
 
-    /* Footer Credits Styling */
-    .app-footer {
-      text-align: center;
-      margin-top: 20px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 0.8rem;
-      color: #888;
-    }
-    .app-footer span {
-      color: var(--green);
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 8px;
       font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <!-- TOP PILL NAVIGATION -->
-  <div class="nav-pill-container">
-    <button id="pillPatient" class="nav-pill active" onclick="switchView('patient')">📱 Patient App</button>
-    <button id="pillHospital" class="nav-pill" onclick="switchView('hospital')">🏥 Hospital Dashboard</button>
-  </div>
-
-  <!-- PATIENT PORTAL -->
-  <div id="patientCard" class="view-card">
-    <div class="app-header">
-      <svg class="app-logo" width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <header class="app-header">
+    <div class="logo-container">
+      <svg class="logo-svg" viewBox="0 0 500 500">
         <defs>
           <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stop-color="#3a005f"/>
@@ -250,103 +292,137 @@
         <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#3a005f" stroke-width="4"/>
         <path d="M250,70 L360,110 C360,240 250,330 250,350 C250,330 140,240 140,110 Z" fill="url(#shieldGrad)" stroke="#ffffff" stroke-width="6" opacity="0.95"/>
         <path d="M120,220 H190 L210,170 L235,260 L265,140 L290,240 L310,220 H380" fill="none" stroke="url(#pulseGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-        <text x="250" y="420" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="70" fill="#00e676" letter-spacing="4">SEA</text>
+        <text x="250" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="900" font-size="70" fill="#00e676" letter-spacing="4">SEA</text>
       </svg>
-      <h1 class="app-title">SEA App</h1>
-      <p class="app-subtitle">SOS Emergency Attendance</p>
+      <span class="app-title">SEA</span>
     </div>
 
-    <a href="tel:112" class="call-112-btn">📞 CALL 112 DIRECTLY</a>
-
-    <button class="sos-btn" onclick="triggerSOS()">SOS</button>
-
-    <!-- SOS Target Options -->
-    <div class="sos-mode-selector">
-      <label class="sos-mode-option">
-        <input type="radio" name="sosTarget" value="hospital" checked> 🏥 Alert Hospital Only
-      </label>
-      <label class="sos-mode-option">
-        <input type="radio" name="sosTarget" value="both"> 🚨 Both (Alert & Call 112)
-      </label>
+    <div class="view-pills">
+      <button id="pillPatient" class="pill-btn active" onclick="switchView('patient')">Patient</button>
+      <button id="pillHospital" class="pill-btn" onclick="switchView('hospital')">Hospital</button>
     </div>
+  </header>
 
-    <div class="grid-2">
-      <input type="text" id="pName" placeholder="Full Name">
-      <input type="tel" id="pPhone" placeholder="Phone Number">
-    </div>
-    <textarea id="pAddress" rows="2" placeholder="Manual Address / Landmark"></textarea>
+  <!-- PATIENT PORTAL -->
+  <main id="patientCard" class="card">
+    <h2>Patient Emergency Profile</h2>
     
-    <div class="grid-2">
-      <select id="pBlood">
-        <option value="Unknown">Select Blood Group</option>
-        <option value="O+">O+</option><option value="O-">O-</option>
-        <option value="A+">A+</option><option value="A-">A-</option>
-        <option value="B+">B+</option><option value="B-">B-</option>
-        <option value="AB+">AB+</option><option value="AB-">AB-</option>
-      </select>
-      <input type="text" id="pICE" placeholder="Emergency Contact (ICE)">
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="pName" placeholder="e.g. John Doe" value="John Doe" />
     </div>
-    <input type="text" id="pAllergies" placeholder="Known Allergies">
-    <textarea id="pConditions" rows="2" placeholder="Medical Conditions"></textarea>
 
-    <div id="patientStatus" class="status-box">System Ready</div>
-
-    <!-- Patient Footer Credits -->
-    <div class="app-footer">
-      Developed by <span>Gangan R G and team SEA</span>
+    <div class="form-group">
+      <label>Contact Phone</label>
+      <input type="tel" id="pPhone" placeholder="e.g. 9876543210" value="9876543210" />
     </div>
-  </div>
 
-  <!-- HOSPITAL LOGIN & REGISTER MODAL -->
-  <div id="loginModal" class="modal-overlay">
-    <div class="login-card">
-      <h3 id="modalTitle" style="color:var(--green); margin-top:0;">Hospital Login</h3>
+    <div class="form-group">
+      <label>Current Address / Landmark</label>
+      <input type="text" id="pAddress" placeholder="e.g. 123 Main Street" value="123 Main Street" />
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-group" style="flex:1;">
+        <label>Blood Group</label>
+        <select id="pBlood">
+          <option value="O+" selected>O+</option>
+          <option value="O-">O-</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="flex:2;">
+        <label>ICE Contact (In Case of Emergency)</label>
+        <input type="tel" id="pICE" placeholder="Emergency Phone" value="9876543211" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Severe Allergies</label>
+      <input type="text" id="pAllergies" placeholder="e.g. Penicillin, Peanuts" value="Penicillin" />
+    </div>
+
+    <div class="form-group">
+      <label>Pre-existing Medical Conditions</label>
+      <input type="text" id="pConditions" placeholder="e.g. Asthma, Diabetes" value="Asthma" />
+    </div>
+
+    <label style="margin-top: 10px;">Dispatch Action</label>
+    <div class="sos-radio-group">
+      <label class="sos-radio-label">
+        <input type="radio" name="sosTarget" value="hospital" checked /> Alert Hospital Only
+      </label>
+      <label class="sos-radio-label">
+        <input type="radio" name="sosTarget" value="both" /> Alert & Call 112
+      </label>
+    </div>
+
+    <div class="sos-btn-wrapper">
+      <button class="sos-btn" onclick="triggerSOS()">SOS</button>
+    </div>
+
+    <div id="patientStatus" class="status-msg"></div>
+  </main>
+
+  <!-- HOSPITAL DASHBOARD -->
+  <main id="hospitalCard" class="card" style="display:none;">
+    <div id="sirenHeader" class="siren-header">
+      <h2 id="hStatus" style="margin:0;">Status: Monitoring Network</h2>
+      <small id="activeHospitalName" style="color:var(--green); font-weight:bold;"></small>
+    </div>
+
+    <button class="ack-btn" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
+
+    <div id="alertDetails" style="line-height: 1.6; font-size: 0.95rem;">
+      <p style="color:var(--gray);">No active distress signal detected.</p>
+    </div>
+
+    <div id="map"></div>
+
+    <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+      <span id="loggedInUserDisplay" style="font-size:0.8rem; color:var(--gray);"></span>
+      <button onclick="logoutHospital()" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:bold;">Log Out</button>
+    </div>
+  </main>
+
+  <!-- AUTHENTICATION MODAL FOR HOSPITAL -->
+  <div id="loginModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <h2 id="modalTitle">Hospital Login</h2>
       
       <div id="signupFields" style="display:none;">
-        <input type="text" id="regHospName" placeholder="Hospital / Facility Name">
+        <div class="form-group">
+          <label>Hospital Facility Name</label>
+          <input type="text" id="regHospName" placeholder="e.g. Central General Hospital" />
+        </div>
       </div>
 
-      <input type="text" id="loginUser" placeholder="Username">
-      <input type="password" id="loginPass" placeholder="Password">
-      
-      <p id="authMsg" style="font-size:0.85rem; display:none; margin:5px 0;"></p>
-
-      <div style="margin-top:15px; display:flex; gap:8px;">
-        <button id="authSubmitBtn" style="flex:1; padding:10px; background:var(--green); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="handleAuthSubmit()">Login</button>
-        <button style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="switchView('patient')">Cancel</button>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username" />
       </div>
 
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Enter password" />
+      </div>
+
+      <div id="authMsg" style="color: var(--red); font-size: 0.85rem; margin-bottom: 10px; display: none;"></div>
+
+      <button id="authSubmitBtn" class="btn-submit" onclick="handleAuthSubmit()">Login</button>
       <span id="toggleAuthMode" class="toggle-link" onclick="toggleAuthMode()">Don't have an account? Register Hospital</span>
+      <span class="toggle-link" style="color: var(--gray); text-decoration: none;" onclick="switchView('patient')">Cancel</span>
     </div>
   </div>
 
-  <!-- HOSPITAL DASHBOARD VIEW -->
-  <div id="hospitalCard" class="view-card wide" style="display:none;">
-    <div class="hospital-header" id="sirenHeader">
-      <div>
-        <h2 id="activeHospitalName" style="margin:0; color:var(--green);">Hospital Control Unit</h2>
-        <small id="loggedInUserDisplay" style="color:#aaa;"></small>
-        <div id="hStatus" style="font-weight:bold; margin-top:4px;">Status: Online & Listening Across Devices</div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button style="background:var(--green); border:none; padding:10px 18px; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="stopSiren()">ACKNOWLEDGE & STOP SIREN</button>
-        <button style="background:#444; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;" onclick="logoutHospital()">Logout</button>
-      </div>
-    </div>
-
-    <div class="hospital-grid">
-      <div style="background:#0d0017; border:1px solid var(--light-purple); padding:15px; border-radius:12px; overflow-y:auto; max-height:450px;">
-        <h3 style="color:var(--green); margin-top:0;">Live Emergency Data</h3>
-        <div id="alertDetails"><p style="color:#888;">Waiting for live SOS signals...</p></div>
-      </div>
-      <div id="map"></div>
-    </div>
-
-    <!-- Hospital Footer Credits -->
-    <div class="app-footer">
-      Developed by <span>Gangan R G and team SEA</span>
-    </div>
-  </div>
+  <!-- Leaflet JS for Maps -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
     // Unique dedicated channel name to avoid collisions across network
@@ -354,6 +430,9 @@
     
     // Unique device identifier
     const MY_DEVICE_ID = "DEV_" + Math.random().toString(36).substr(2, 9);
+
+    // Same-Link / Same-Browser Local Channel (Instant direct browser memory sync)
+    const localChannel = new BroadcastChannel("sea_local_direct_channel");
 
     let authenticatedUser = null;
     let isRegisterMode = false;
@@ -363,7 +442,15 @@
     let processedMessageIds = new Set();
     let latestCoords = { lat: null, lng: null, accuracy: null };
 
-    // Fast Polling Listener (2-second interval)
+    // Listen for direct local tab-to-tab messages on the same link
+    localChannel.onmessage = (event) => {
+      const data = event.data;
+      if (data && data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
+        receiveSOS(data);
+      }
+    };
+
+    // Fast Polling Listener for Cross-Device / Network messages (2-second interval)
     function startPollingListener() {
       setInterval(async () => {
         try {
@@ -509,7 +596,7 @@
       }
     }
 
-    // Broadcast emergency payload
+    // Broadcast emergency payload locally (same link) and over network
     function sendSOSPayload(lat, lng, accuracy) {
       const status = document.getElementById('patientStatus');
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
@@ -536,6 +623,10 @@
         time: new Date().toLocaleTimeString()
       };
 
+      // 1. Instant local transmission to all open tabs on the same link
+      localChannel.postMessage(payload);
+
+      // 2. Network transmission for external devices
       fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
@@ -543,156 +634,4 @@
       }).then(() => {
         status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
         status.style.color = "var(--green)";
-      }).catch(err => {
-        status.innerText = "⚠️ Transmission Error. Retrying...";
-      });
-    }
-
-    // Trigger SOS Signal Across All Devices
-    function triggerSOS() {
-      const status = document.getElementById('patientStatus');
-      status.innerText = "🚨 Transmitting Distress Signal to Network...";
-      status.style.color = "var(--yellow)";
-
-      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
-
-      // Immediate payload transmission
-      sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
-
-      if (selectedTarget === 'both') {
-        window.location.href = "tel:112";
-      }
-
-      // Continuous position polling engine
-      if ("geolocation" in navigator) {
-        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
-        if (locationFallbackInterval) clearInterval(locationFallbackInterval);
-
-        // High accuracy attempt
-        gpsWatchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            latestCoords = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
-            };
-            sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
-          },
-          (err) => {
-            // Fallback coarse location request if high accuracy fails
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                latestCoords = {
-                  lat: pos.coords.latitude,
-                  lng: pos.coords.longitude,
-                  accuracy: pos.coords.accuracy
-                };
-                sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
-              },
-              null,
-              { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-            );
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-
-        // Ensure continuous transmission loop every 3 seconds
-        locationFallbackInterval = setInterval(() => {
-          sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
-        }, 3000);
-      }
-    }
-
-    function receiveSOS(data) {
-      if (document.getElementById('hospitalCard').style.display === 'block') {
-        startSiren();
-        document.getElementById('sirenHeader').classList.add('siren-active');
-        document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
-
-        let locationText = data.lat ? 
-          `<p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
-           <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">±${Math.round(data.accuracy)} meters</span></p>` : 
-          `<p style="color:var(--yellow);">⚠️ Acquiring precise GPS fix...</p>`;
-
-        document.getElementById('alertDetails').innerHTML = `
-          <p><strong>Time:</strong> ${data.time}</p>
-          <p><strong>Name:</strong> ${data.name}</p>
-          <p><strong>Phone:</strong> ${data.phone}</p>
-          <p><strong>Blood Group:</strong> <span class="badge">${data.blood}</span></p>
-          <hr style="border-color:var(--light-purple)">
-          <p><strong>Address:</strong> ${data.address}</p>
-          <p><strong>Allergies:</strong> ${data.allergies}</p>
-          <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
-          <p><strong>ICE Contact:</strong> ${data.ice}</p>
-          <hr style="border-color:var(--light-purple)">
-          ${locationText}
-        `;
-
-        if (data.lat && map) {
-          const coords = [data.lat, data.lng];
-          map.setView(coords, 16);
-
-          if (mapMarker) map.removeLayer(mapMarker);
-          mapMarker = L.marker(coords).addTo(map).bindPopup(`<b>${data.name}</b>`).openPopup();
-
-          if (accuracyCircle) map.removeLayer(accuracyCircle);
-          if (data.accuracy) {
-            accuracyCircle = L.circle(coords, { radius: data.accuracy, color: '#00e676', fillColor: '#00e676', fillOpacity: 0.2 }).addTo(map);
-          }
-        }
-      }
-    }
-
-    function initMap() {
-      if (!map) {
-        map = L.map('map').setView([20.5937, 78.9629], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-      }
-    }
-
-    // Audio Siren Engine
-    function startSiren() {
-      if (oscillator) return;
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        oscillator = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
-
-        let toggle = false;
-        sirenInterval = setInterval(() => {
-          if (oscillator && audioCtx && audioCtx.state === 'running') {
-            oscillator.frequency.setValueAtTime(toggle ? 600 : 900, audioCtx.currentTime);
-            toggle = !toggle;
-          }
-        }, 400);
-
-        oscillator.connect(gain);
-        gain.connect(audioCtx.destination);
-        oscillator.start();
-      } catch(e) {
-        console.log("Audio block", e);
-      }
-    }
-
-    function stopSiren() {
-      if (sirenInterval) {
-        clearInterval(sirenInterval);
-        sirenInterval = null;
-      }
-      if (oscillator) {
-        try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
-        oscillator = null;
-      }
-      if (audioCtx) {
-        try { audioCtx.close(); } catch(e){}
-        audioCtx = null;
-      }
-      
-      document.getElementById('sirenHeader').classList.remove('siren-active');
-      document.getElementById('hStatus').innerText = "Status: Alert Acknowledged";
-    }
-  </script>
-</body>
-</html>
+      }).cat
