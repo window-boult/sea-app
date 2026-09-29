@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SEA - SOS Emergency Attendance System</title>
   
-  <!-- Manifest for Progressive Web App -->
   <link rel="manifest" href="manifest.json" />
-
-  <!-- Leaflet CSS for Mapping -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -27,7 +24,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
@@ -83,7 +80,6 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 0.85rem;
-      transition: all 0.2s ease;
     }
 
     .pill-btn.active {
@@ -105,7 +101,6 @@
     h2 {
       margin-bottom: 16px;
       font-size: 1.3rem;
-      color: var(--white);
     }
 
     .form-group {
@@ -127,10 +122,6 @@
       background: #150024;
       color: var(--white);
       font-size: 0.95rem;
-    }
-
-    input:focus, select:focus {
-      outline: 2px solid var(--green);
     }
 
     .sos-radio-group {
@@ -164,12 +155,10 @@
       font-weight: 900;
       cursor: pointer;
       box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
-      transition: transform 0.1s ease, box-shadow 0.2s ease;
     }
 
     .sos-btn:active {
       transform: scale(0.94);
-      box-shadow: 0 0 15px rgba(255, 23, 68, 0.5);
     }
 
     .status-msg {
@@ -180,14 +169,12 @@
       min-height: 24px;
     }
 
-    /* Hospital Siren Banner */
     .siren-header {
       padding: 12px;
       border-radius: 8px;
       background: var(--light-purple);
       text-align: center;
       margin-bottom: 16px;
-      transition: background 0.3s ease;
     }
 
     .siren-header.siren-active {
@@ -227,7 +214,6 @@
       font-weight: bold;
     }
 
-    /* Modal Styling for Auth */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -338,19 +324,19 @@
       </div>
 
       <div class="form-group" style="flex:2;">
-        <label>ICE Contact (In Case of Emergency)</label>
+        <label>ICE Contact</label>
         <input type="tel" id="pICE" placeholder="Emergency Phone" value="9876543211" />
       </div>
     </div>
 
     <div class="form-group">
       <label>Severe Allergies</label>
-      <input type="text" id="pAllergies" placeholder="e.g. Penicillin, Peanuts" value="Penicillin" />
+      <input type="text" id="pAllergies" placeholder="e.g. Penicillin" value="Penicillin" />
     </div>
 
     <div class="form-group">
-      <label>Pre-existing Medical Conditions</label>
-      <input type="text" id="pConditions" placeholder="e.g. Asthma, Diabetes" value="Asthma" />
+      <label>Pre-existing Conditions</label>
+      <input type="text" id="pConditions" placeholder="e.g. Asthma" value="Asthma" />
     </div>
 
     <label style="margin-top: 10px;">Dispatch Action</label>
@@ -421,18 +407,10 @@
     </div>
   </div>
 
-  <!-- Leaflet JS for Maps -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Unique dedicated channel name to avoid collisions across network
     const SHARED_CHANNEL = "sea_emergency_channel_prod_99";
-    
-    // Unique device identifier
-    const MY_DEVICE_ID = "DEV_" + Math.random().toString(36).substr(2, 9);
-
-    // Same-Link / Same-Browser Local Channel (Instant direct browser memory sync)
-    const localChannel = new BroadcastChannel("sea_local_direct_channel");
 
     let authenticatedUser = null;
     let isRegisterMode = false;
@@ -442,15 +420,6 @@
     let processedMessageIds = new Set();
     let latestCoords = { lat: null, lng: null, accuracy: null };
 
-    // Listen for direct local tab-to-tab messages on the same link
-    localChannel.onmessage = (event) => {
-      const data = event.data;
-      if (data && data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
-        receiveSOS(data);
-      }
-    };
-
-    // Fast Polling Listener for Cross-Device / Network messages (2-second interval)
     function startPollingListener() {
       setInterval(async () => {
         try {
@@ -466,7 +435,7 @@
               const item = JSON.parse(line);
               if (item && item.id && !processedMessageIds.has(item.id) && item.message) {
                 const data = JSON.parse(item.message);
-                if (data.type === 'SOS_ALERT' && data.senderId !== MY_DEVICE_ID) {
+                if (data.type === 'SOS_ALERT') {
                   processedMessageIds.add(item.id);
                   receiveSOS(data);
                 }
@@ -596,7 +565,6 @@
       }
     }
 
-    // Broadcast emergency payload locally (same link) and over network
     function sendSOSPayload(lat, lng, accuracy) {
       const status = document.getElementById('patientStatus');
       const nameVal = document.getElementById('pName').value.trim() || "Unknown";
@@ -609,7 +577,6 @@
 
       const payload = {
         type: 'SOS_ALERT',
-        senderId: MY_DEVICE_ID,
         name: nameVal,
         phone: phoneVal,
         address: addressVal,
@@ -623,15 +590,53 @@
         time: new Date().toLocaleTimeString()
       };
 
-      // 1. Instant local transmission to all open tabs on the same link
-      localChannel.postMessage(payload);
-
-      // 2. Network transmission for external devices
       fetch(`https://ntfy.sh/${SHARED_CHANNEL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(() => {
-        status.innerText = "🚨 DISTRESS SENT TO ALL CONNECTED HOSPITALS!";
+        status.innerText = "🚨 DISTRESS SIGNAL TRANSMITTED!";
         status.style.color = "var(--green)";
-      }).cat
+      }).catch(err => {
+        status.innerText = "⚠️ Transmission retry in progress...";
+        status.style.color = "var(--yellow)";
+      });
+    }
+
+    function triggerSOS() {
+      const status = document.getElementById('patientStatus');
+      status.innerText = "🚨 Transmitting Distress Signal...";
+      status.style.color = "var(--yellow)";
+
+      const selectedTarget = document.querySelector('input[name="sosTarget"]:checked').value;
+
+      sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+
+      if (selectedTarget === 'both') {
+        window.location.href = "tel:112";
+      }
+
+      if ("geolocation" in navigator) {
+        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+        if (locationFallbackInterval) clearInterval(locationFallbackInterval);
+
+        gpsWatchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            latestCoords = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            };
+            sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+          },
+          (err) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                latestCoords = {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy
+                };
+                sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+              },
+            
