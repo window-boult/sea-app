@@ -24,7 +24,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
 
     body {
@@ -34,12 +34,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 16px;
     }
 
     .app-header {
       width: 100%;
-      max-width: 600px;
+      max-width: 550px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -49,16 +49,16 @@
     .logo-container {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .logo-svg {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
     }
 
     .app-title {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 800;
       letter-spacing: 1px;
       color: var(--green);
@@ -75,11 +75,12 @@
       background: none;
       border: none;
       color: var(--white);
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 16px;
       cursor: pointer;
       font-weight: 600;
       font-size: 0.85rem;
+      transition: all 0.2s ease;
     }
 
     .pill-btn.active {
@@ -89,10 +90,10 @@
 
     .card {
       width: 100%;
-      max-width: 600px;
+      max-width: 550px;
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       border: 1px solid var(--light-purple);
       margin-bottom: 20px;
@@ -100,7 +101,8 @@
 
     h2 {
       margin-bottom: 16px;
-      font-size: 1.3rem;
+      font-size: 1.25rem;
+      color: var(--white);
     }
 
     .form-group {
@@ -124,6 +126,10 @@
       font-size: 0.95rem;
     }
 
+    input:focus, select:focus {
+      outline: 2px solid var(--green);
+    }
+
     .sos-radio-group {
       display: flex;
       gap: 16px;
@@ -145,8 +151,8 @@
     }
 
     .sos-btn {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       border-radius: 50%;
       background: radial-gradient(circle, #ff5252 0%, #b20000 100%);
       color: var(--white);
@@ -155,10 +161,12 @@
       font-weight: 900;
       cursor: pointer;
       box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
     }
 
     .sos-btn:active {
       transform: scale(0.94);
+      box-shadow: 0 0 15px rgba(255, 23, 68, 0.5);
     }
 
     .status-msg {
@@ -201,7 +209,7 @@
 
     #map {
       width: 100%;
-      height: 250px;
+      height: 240px;
       border-radius: 8px;
       margin-top: 16px;
     }
@@ -217,16 +225,17 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      padding: 16px;
     }
 
     .modal-card {
       background: var(--card-bg);
-      width: 90%;
+      width: 100%;
       max-width: 400px;
       padding: 24px;
       border-radius: 16px;
@@ -420,6 +429,7 @@
     let processedMessageIds = new Set();
     let latestCoords = { lat: null, lng: null, accuracy: null };
 
+    // Continuously check for network alerts across any device
     function startPollingListener() {
       setInterval(async () => {
         try {
@@ -639,4 +649,109 @@
                 };
                 sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
               },
-            
+              null,
+              { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            );
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+
+        locationFallbackInterval = setInterval(() => {
+          sendSOSPayload(latestCoords.lat, latestCoords.lng, latestCoords.accuracy);
+        }, 3000);
+      }
+    }
+
+    function receiveSOS(data) {
+      if (document.getElementById('hospitalCard').style.display === 'block') {
+        startSiren();
+        document.getElementById('sirenHeader').classList.add('siren-active');
+        document.getElementById('hStatus').innerText = "🚨 DISTRESS ALERT RECEIVED!";
+
+        let locationText = data.lat ? 
+          `<p><strong>GPS Coordinates:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</p>
+           <p><strong>GPS Accuracy:</strong> <span style="color:var(--green);">±${Math.round(data.accuracy)} meters</span></p>` : 
+          `<p style="color:var(--yellow);">⚠️ Acquiring precise GPS fix...</p>`;
+
+        document.getElementById('alertDetails').innerHTML = `
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Name:</strong> ${data.name}</p>
+          <p><strong>Phone:</strong> ${data.phone}</p>
+          <p><strong>Blood Group:</strong> <span class="badge">${data.blood}</span></p>
+          <hr style="border-color:var(--light-purple); margin: 8px 0;">
+          <p><strong>Address:</strong> ${data.address}</p>
+          <p><strong>Allergies:</strong> ${data.allergies}</p>
+          <p><strong>Pre-existing Conditions:</strong> ${data.conditions}</p>
+          <p><strong>ICE Contact:</strong> ${data.ice}</p>
+          <hr style="border-color:var(--light-purple); margin: 8px 0;">
+          ${locationText}
+        `;
+
+        if (data.lat && map) {
+          const coords = [data.lat, data.lng];
+          map.setView(coords, 16);
+
+          if (mapMarker) map.removeLayer(mapMarker);
+          mapMarker = L.marker(coords).addTo(map).bindPopup(`<b>${data.name}</b>`).openPopup();
+
+          if (accuracyCircle) map.removeLayer(accuracyCircle);
+          if (data.accuracy) {
+            accuracyCircle = L.circle(coords, { radius: data.accuracy, color: '#00e676', fillColor: '#00e676', fillOpacity: 0.2 }).addTo(map);
+          }
+        }
+      }
+    }
+
+    function initMap() {
+      if (!map) {
+        map = L.map('map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+      }
+    }
+
+    function startSiren() {
+      if (oscillator) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+
+        let toggle = false;
+        sirenInterval = setInterval(() => {
+          if (oscillator && audioCtx && audioCtx.state === 'running') {
+            oscillator.frequency.setValueAtTime(toggle ? 600 : 900, audioCtx.currentTime);
+            toggle = !toggle;
+          }
+        }, 400);
+
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start();
+      } catch(e) {
+        console.log("Audio block", e);
+      }
+    }
+
+    function stopSiren() {
+      if (sirenInterval) {
+        clearInterval(sirenInterval);
+        sirenInterval = null;
+      }
+      if (oscillator) {
+        try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
+        oscillator = null;
+      }
+      if (audioCtx) {
+        try { audioCtx.close(); } catch(e){}
+        audioCtx = null;
+      }
+      
+      document.getElementById('sirenHeader').classList.remove('siren-active');
+      document.getElementById('hStatus').innerText = "Status: Alert Acknowledged";
+    }
+  </script>
+</body>
+</html>
+
